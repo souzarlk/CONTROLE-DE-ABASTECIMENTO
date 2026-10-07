@@ -228,3 +228,28 @@ body.dark-mode{--black:#f5f5f5;--gray-300:#444;--gray-500:#aaa;--shadow:0 18px 5
 .question-placeholder{display:flex;align-items:center;gap:14px;margin-top:18px;padding:18px 20px;border-style:dashed;background:rgba(255,255,255,.72)}.question-placeholder-icon{width:38px;height:38px;flex:0 0 38px;border-radius:11px;background:#fff0f1;color:var(--red);display:grid;place-items:center;font-weight:950}.question-placeholder strong{font-size:12px}.question-placeholder p{margin:4px 0 0;color:#888;font-size:11px}
 .dark-mode .abastecimento-hero{background:linear-gradient(135deg,#1d1d20 0%,#18181b 60%,#251519 100%);border-color:#303035}.dark-mode .abastecimento-hero h2{color:#fff}.dark-mode .abastecimento-hero p{color:#aaa}.dark-mode .abastecimento-hero-mark{background:#222226;border-color:#38383e}.dark-mode .abastecimento-hero-footer{border-color:#303035}.dark-mode .abastecimento-hero-footer span{background:#232328;border-color:#38383e;color:#bbb}.dark-mode .question-placeholder{background:#1a1a1e;border-color:#38383e}.dark-mode .question-placeholder p{color:#aaa}
 @media(max-width:700px){.abastecimento-hero{padding:27px 24px 0}.abastecimento-hero-content{align-items:flex-start}.abastecimento-hero h2{font-size:37px}.abastecimento-hero p{font-size:13px;line-height:1.65}.abastecimento-hero-mark{display:none}.hero-new-btn{width:100%}.question-placeholder{align-items:flex-start}.abastecimento-hero-footer{gap:6px}}
+
+/* ===== Refinamento profissional do formulário ===== */
+.entry-modal-card{width:min(900px,100%);padding:34px 36px 30px;border-radius:24px}
+.entry-modal-card .modal-head{padding-bottom:20px;margin-bottom:0;border-bottom:1px solid #eee}
+.entry-modal-card .modal-head h2{font-size:29px;letter-spacing:-.04em;margin:7px 0 5px}
+.entry-modal-card .modal-head p{font-size:12px;line-height:1.55}
+#entryForm{padding-top:4px}
+.form-section-title{position:relative;display:flex;align-items:center;gap:13px;padding:26px 2px 14px;margin-top:5px;border-top:0}
+.form-section-title:before{content:"";position:absolute;left:0;right:0;top:15px;height:1px;background:#ededed}
+.form-section-title>span{position:relative;width:34px;height:34px;border-radius:10px;background:var(--red);color:#fff;box-shadow:0 7px 16px rgba(227,6,19,.18);display:grid;place-items:center;font-size:10px;font-weight:950;flex:0 0 34px}
+.form-section-title strong{font-size:14px;letter-spacing:-.01em}.form-section-title small{font-size:10px;margin-top:3px;color:#999}
+.form-grid{gap:18px 20px;padding:4px 0 5px}
+.field{min-width:0;background:#fafafa;border:1px solid #e8e8e8;border-radius:14px;padding:15px 16px 13px;transition:border-color .2s,box-shadow .2s,transform .2s}
+.field:focus-within{background:#fff;border-color:rgba(227,6,19,.45);box-shadow:0 8px 25px rgba(0,0,0,.045),0 0 0 3px rgba(227,6,19,.06);transform:translateY(-1px)}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;text-transform:uppercase;letter-spacing:.045em;margin-bottom:8px;color:#444}.field label b{font-size:12px}
+.field input,.field select{height:45px;border:1px solid #d8d8d8;border-radius:10px;padding:0 12px;background:#fff;font-size:13px;transition:.2s}
+.field input::placeholder{color:#b0b0b0}.field input:focus,.field select:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227,6,19,.08)}
+.date-action{height:45px}.date-action input{height:45px}.mini-btn{height:45px;padding:0 15px;background:#f1f1f1;border-color:#ddd;color:#555}
+.field small{margin-top:7px;font-size:9px;line-height:1.45;color:#999}.field-feedback{min-height:16px;margin-top:5px;font-size:9px}
+.photo-input{height:45px!important;padding:9px!important;background:#fff!important}.photo-preview{margin-top:9px;padding-top:0}.photo-preview img{width:64px;height:48px;border-radius:8px}.photo-preview span{font-size:9px}
+.validation-box{margin:20px 0 0}.notice{margin-top:14px;padding:14px 16px;border-radius:12px;line-height:1.6}
+.modal-actions{padding-top:20px;margin-top:4px;border-top:1px solid #eee}.modal-actions .secondary-btn{min-height:44px}.save-entry-btn{min-height:44px;padding:0 22px!important}
+.dark-mode .entry-modal-card .modal-head,.dark-mode .modal-actions{border-color:#303035}.dark-mode .form-section-title:before{background:#303035}.dark-mode .field{background:#202023;border-color:#303035}.dark-mode .field:focus-within{background:#242428;border-color:rgba(227,6,19,.55)}.dark-mode .field label{color:#ddd}.dark-mode .field input,.dark-mode .field select,.dark-mode .photo-input{background:#171719!important;border-color:#444;color:#fff}.dark-mode .field input::placeholder{color:#777}.dark-mode .mini-btn{background:#29292e;border-color:#444;color:#ddd}
+@media(max-width:650px){.entry-modal-card{padding:24px 18px 22px}.entry-modal-card .modal-head h2{font-size:25px}.form-grid{gap:12px}.field{padding:14px}.form-section-title{padding-top:23px}.date-action{height:auto;flex-direction:column;gap:8px}.date-action input,.date-action .mini-btn{height:44px}.modal-actions{flex-direction:column-reverse}.modal-actions button{width:100%}}
