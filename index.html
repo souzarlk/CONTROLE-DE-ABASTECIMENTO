@@ -30,7 +30,14 @@
 <div id="app" class="app hidden">
 <header class="topbar"><div class="topbar-inner">
 <div class="brand-lockup"><img src="assets/logo-costalog.svg" alt="Costalog"><div><strong>Abastecimento</strong><span>Controle inteligente da frota</span></div></div>
-<nav class="main-nav" aria-label="Navegação"><button class="nav-btn active" data-view="dashboard">Dashboard</button><button class="nav-btn" data-view="history">Abastecimentos</button><button class="nav-btn" data-view="vehicles">Veículos</button></nav>
+<nav class="main-nav" aria-label="Navegação">
+<button class="nav-btn active" data-view="dashboard">Dashboard</button>
+<button class="nav-btn" data-view="history">Abastecimentos</button>
+<button class="nav-btn" data-view="vehicles">Veículos</button>
+<button class="nav-btn" data-view="questions">Perguntas</button>
+<button class="nav-btn" data-view="answers">Respostas</button>
+<button class="nav-btn" data-view="settings">Configurações</button>
+</nav>
 <div class="top-actions"><span class="role-badge">USUÁRIO</span><button id="themeToggle" class="theme-toggle" type="button">☾</button><button id="logoutBtn" class="ghost-btn">Sair</button></div>
 </div></header>
 
@@ -64,6 +71,52 @@
 <button id="clearFilters" class="secondary-btn">Limpar</button>
 </div><div class="filter-summary" id="filterSummary">—</div></div>
 <div class="table-panel panel"><div class="table-wrap"><table><thead><tr><th>Data / hora</th><th>Funcionário</th><th>Placa</th><th>Hodômetro</th><th>Litros</th><th>Antifurto</th><th>Tanques</th></tr></thead><tbody id="historyBody"></tbody></table></div><div id="pagination" class="pagination"></div></div>
+</section>
+
+<section id="questionsView" class="view hidden">
+<div class="page-head"><div><span class="eyebrow red">FORMULÁRIO</span><h2>Perguntas</h2><p>Campos utilizados no controle de abastecimento, organizados para conferência e preenchimento.</p></div><button id="questionsNewBtn" class="primary-btn hero-btn">＋ Novo abastecimento</button></div>
+<div class="question-layout">
+<div class="panel question-intro"><span class="question-number">01</span><div><h3>Dados do abastecimento</h3><p>Essas são as perguntas que alimentam a base operacional. Os campos seguem a estrutura do controle atual.</p></div></div>
+<div class="question-grid">
+<article class="question-card"><span>01</span><div><strong>Data</strong><small>Campo: DATA</small><p>Data em que o abastecimento foi realizado.</p></div><em>date</em></article><article class="question-card"><span>02</span><div><strong>Hora</strong><small>Campo: HORA</small><p>Horário do abastecimento.</p></div><em>time</em></article><article class="question-card"><span>03</span><div><strong>Funcionário</strong><small>Campo: FUNCIONÁRIO</small><p>Motorista ou colaborador responsável.</p></div><em>text</em></article><article class="question-card"><span>04</span><div><strong>Placa</strong><small>Campo: Placa</small><p>Identificação do veículo abastecido.</p></div><em>text</em></article><article class="question-card"><span>05</span><div><strong>Quantidade de litros</strong><small>Campo: Qtd - Litros</small><p>Volume abastecido, em litros.</p></div><em>number</em></article><article class="question-card"><span>06</span><div><strong>Hodômetro</strong><small>Campo: Hodômetro</small><p>Quilometragem registrada no momento do abastecimento.</p></div><em>number</em></article><article class="question-card"><span>07</span><div><strong>Possui antifurto?</strong><small>Campo: Possuí Antifurto?</small><p>Situação do dispositivo antifurto informado no controle.</p></div><em>select</em></article><article class="question-card"><span>08</span><div><strong>Quantidade de tanques</strong><small>Campo: Quantos tanque o veículo possui?</small><p>Quantidade de tanques do veículo.</p></div><em>select</em></article>
+</div>
+<div class="panel question-note"><strong>Automatizações previstas</strong><div class="automation-list"><span>✓ Validação de placa</span><span>✓ Registro de data e hora</span><span>✓ Indicadores automáticos</span><span>✓ Alertas de inconsistência</span><span>✓ Histórico pesquisável</span></div></div>
+</div>
+</section>
+
+<section id="answersView" class="view hidden">
+<div class="page-head"><div><span class="eyebrow red">BASE DE DADOS</span><h2>Respostas</h2><p>Visão consolidada das respostas importadas e dos novos registros.</p></div><div class="answer-actions"><button id="exportAnswersBtn" class="secondary-btn">↓ Exportar CSV</button><button id="answersNewBtn" class="primary-btn hero-btn">＋ Novo abastecimento</button></div></div>
+<div class="answer-stats">
+<div class="stats-card accent"><span>Total de respostas</span><strong id="answerTotal">—</strong></div>
+<div class="stats-card"><span>Volume total</span><strong id="answerLiters">—</strong></div>
+<div class="stats-card"><span>Veículos envolvidos</span><strong id="answerVehicles">—</strong></div>
+<div class="stats-card"><span>Com alerta</span><strong id="answerAlerts">—</strong></div>
+</div>
+<div class="panel answers-toolbar"><div class="search-field"><span>⌕</span><input id="answerSearch" placeholder="Pesquisar resposta por placa, funcionário ou data..."></div><button id="refreshAnswers" class="secondary-btn">↻ Atualizar</button></div>
+<div class="panel response-table"><div class="table-wrap"><table><thead><tr><th>#</th><th>Data</th><th>Hora</th><th>Funcionário</th><th>Placa</th><th>Litros</th><th>Hodômetro</th><th>Antifurto</th><th>Tanques</th></tr></thead><tbody id="answersBody"></tbody></table></div></div>
+</section>
+
+<section id="settingsView" class="view hidden">
+<div class="page-head"><div><span class="eyebrow red">SISTEMA</span><h2>Configurações</h2><p>Preferências do portal, regras de validação e manutenção da base local.</p></div></div>
+<div class="settings-grid">
+<div class="panel settings-card"><div class="settings-title"><div class="settings-icon">⚙</div><div><h3>Preferências</h3><p>Ajustes visuais e comportamento do sistema.</p></div></div>
+<label class="setting-row"><span><strong>Modo escuro</strong><small>Usar tema escuro no portal.</small></span><input id="settingDark" class="toggle-setting" type="checkbox"></label>
+<label class="setting-row"><span><strong>Atualização automática</strong><small>Atualizar a visão de respostas ao abrir a página.</small></span><input id="settingAuto" class="toggle-setting" type="checkbox" checked></label>
+</div>
+<div class="panel settings-card"><div class="settings-title"><div class="settings-icon">✓</div><div><h3>Validações</h3><p>Regras usadas nos registros novos.</p></div></div>
+<label class="setting-row"><span><strong>Alertar antifurto fora do padrão</strong><small>Destacar respostas diferentes de “Sim - ok”.</small></span><input id="settingAnti" class="toggle-setting" type="checkbox" checked></label>
+<label class="setting-row"><span><strong>Alertar volume elevado</strong><small>Considerar acima de 800 litros como conferência.</small></span><input id="settingVolume" class="toggle-setting" type="checkbox" checked></label>
+</div>
+<div class="panel settings-card"><div class="settings-title"><div class="settings-icon">▣</div><div><h3>Base de dados</h3><p>Informações sobre a fonte e armazenamento atual.</p></div></div>
+<div class="info-row"><span>Fonte histórica</span><strong>Controle de Abastecimento Costalog</strong></div>
+<div class="info-row"><span>Registros carregados</span><strong id="settingsRecords">—</strong></div>
+<div class="info-row"><span>Armazenamento local</span><strong>Ativo neste navegador</strong></div>
+<button id="clearLocalBtn" class="danger-btn">Limpar somente registros locais</button>
+</div>
+<div class="panel settings-card"><div class="settings-title"><div class="settings-icon">i</div><div><h3>Sobre o sistema</h3><p>Controle interno desenvolvido para a operação Costalog.</p></div></div>
+<div class="system-badge"><strong>COSTALOG</strong><span>Controle de Abastecimento</span><small>Versão 1.0 • Ambiente interno</small></div>
+</div>
+</div>
 </section>
 
 <section id="vehiclesView" class="view hidden">
