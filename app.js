@@ -25,11 +25,12 @@ function view(v){document.querySelectorAll('.view').forEach(x=>x.classList.add('
 function modal(open){$('entryModal').classList.toggle('hidden',!open);if(open){let d=new Date();$('entryDate').value=d.toISOString().slice(0,10);$('entryTime').value=d.toTimeString().slice(0,5)}}
 function save(e){e.preventDefault();let o={'DATA':$('entryDate').value,'HORA':$('entryTime').value,'FUNCIONÁRIO':$('entryEmployee').value.trim().toUpperCase(),'Placa':$('entryPlate').value.trim().toUpperCase(),'Hodômetro':$('entryOdo').value,'Qtd - Litros':$('entryLiters').value,'Possuí Antifurto?':$('entryAnti').value,'Quantos tanque o veículo possui?':$('entryTanks').value,employee:$('entryEmployee').value.trim().toUpperCase(),plate:$('entryPlate').value.trim().toUpperCase(),odo:+$('entryOdo').value,liters:+$('entryLiters').value,date:$('entryDate').value,time:$('entryTime').value};let a=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');a.push(o);localStorage.setItem('costalogAbastecimentos',JSON.stringify(a));allRows.push({...o,id:'local-'+Date.now()});$('entryForm').reset();modal(false);renderAll();alert('Registro salvo neste navegador.')}
 async function login(e){e.preventDefault();let h=await sha($('accessPassword').value);if(h!==PASS.admin&&h!==PASS.user){$('loginError').textContent='Senha incorreta. Verifique os dados e tente novamente.';return}$('loginError').textContent='';sessionStorage.setItem('costalogAuth','1');$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');load().catch(err=>{$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>Confira o arquivo CSV no repositório.</span>';console.error(err)})}
-function theme(){let d=localStorage.getItem('costalogTheme')==='dark';document.body.classList.toggle('dark',d);$('themeToggle').textContent=d?'☀':'☾'}
-$('loginForm').addEventListener('submit',login);$('togglePassword').onclick=()=>{$('accessPassword').type=$('accessPassword').type==='password'?'text':'password'};$('logoutBtn').onclick=()=>{sessionStorage.removeItem('costalogAuth');location.reload()};$('themeToggle').onclick=()=>{localStorage.setItem('costalogTheme',document.body.classList.contains('dark')?'light':'dark');theme()};
+function theme(){let d=localStorage.getItem('costalogTheme')==='dark';document.body.classList.toggle('dark-mode',d);const b=$('themeToggle');if(b)b.textContent=d?'☀':'☾';renderSettings?.()}
+$('loginForm').addEventListener('submit',login);$('togglePassword').onclick=()=>{$('accessPassword').type=$('accessPassword').type==='password'?'text':'password'};$('logoutBtn').onclick=()=>{sessionStorage.removeItem('costalogAuth');location.reload()};$('themeToggle').onclick=()=>{localStorage.setItem('costalogTheme',document.body.classList.contains('dark-mode')?'light':'dark');theme()};
 document.addEventListener('click',e=>{let v=e.target.closest('[data-view]');if(v)view(v.dataset.view);if(e.target.closest('[data-close]'))modal(false);if(e.target.closest('#newEntryBtn,#historyNewBtn'))modal(true);let p=e.target.closest('[data-page]');if(p&&!p.disabled){currentPage=+p.dataset.page;history()}});
-['searchInput','employeeFilter','tankFilter','dateFilter'].forEach(id=>$(id).addEventListener(id==='searchInput'?'input':'change',apply));$('clearFilters').onclick=()=>{$('searchInput').value='';$('employeeFilter').value='';$('tankFilter').value='';$('dateFilter').value='';apply()};$('vehicleSearch').oninput=vehicles;$('entryForm').onsubmit=save;theme();
+$('entryForm').onsubmit=save;theme();
 (function(){let c=$('matrixLayer'),x=c.getContext('2d'),w,h,d;function z(){w=c.width=innerWidth;h=c.height=innerHeight;d=Array(Math.ceil(w/18)).fill(1)}function f(){x.clearRect(0,0,w,h);x.fillStyle='rgba(0,0,0,.4)';x.font='12px monospace';d.forEach((y,i)=>{x.fillText(Math.random()>.5?'1':'0',i*18,y*18);if(y*18>h&&Math.random()>.975)d[i]=0;d[i]++});requestAnimationFrame(f)}z();addEventListener('resize',z);f()})();
+theme();
 if(sessionStorage.getItem('costalogAuth')){$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');load().catch(console.error)}
 
 /* Páginas complementares: Perguntas, Respostas e Configurações */
@@ -41,13 +42,6 @@ function renderAnswers(){
  $('answerTotal').textContent=fmt(rows.length); $('answerLiters').textContent=fmt(rows.reduce((s,r)=>s+r.liters,0),0)+' L';
  $('answerVehicles').textContent=fmt(new Set(rows.map(r=>r.plate)).size); $('answerAlerts').textContent=fmt(alerts);
  $('answersBody').innerHTML=rows.slice(0,300).map((r,i)=>'<tr><td>'+fmt(i+1)+'</td><td>'+br(r.date)+'</td><td>'+esc(r.time)+'</td><td><strong>'+esc(r.employee)+'</strong></td><td><span class="plate-chip">'+esc(r.plate)+'</span></td><td><strong>'+fmt(r.liters,2)+' L</strong></td><td>'+fmt(r.odo)+' km</td><td><span class="status-dot '+(/Sim - ok/i.test(r['Possuí Antifurto?'])?'ok':'warn')+'">'+esc(r['Possuí Antifurto?']||'—')+'</span></td><td>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</td></tr>').join('')||'<tr><td colspan="9" class="no-results">Nenhuma resposta encontrada.</td></tr>';
-}
-function renderSettings(){
- $('settingsRecords').textContent=fmt(allRows.length);
- $('settingDark').checked=document.body.classList.contains('dark');
- $('settingAuto').checked=localStorage.getItem('costalogAutoRefresh')!=='0';
- $('settingAnti').checked=localStorage.getItem('costalogAlertAnti')!=='0';
- $('settingVolume').checked=localStorage.getItem('costalogAlertVolume')!=='0';
 }
 function exportAnswers(){
  const rows=allRows.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
@@ -67,6 +61,7 @@ function setupExtraPages(){
  $('settingVolume')?.addEventListener('change',e=>localStorage.setItem('costalogAlertVolume',e.target.checked?'1':'0'));
  $('clearLocalBtn')?.addEventListener('click',()=>{if(confirm('Remover somente os registros criados neste navegador?')){localStorage.removeItem('costalogAbastecimentos');load()}});
 }
+function renderSettings(){const r=$('settingsRecords');if(r)r.textContent=fmt(allRows.length);const d=$('settingDark');if(d)d.checked=document.body.classList.contains('dark-mode');const a=$('settingAuto');if(a)a.checked=localStorage.getItem('costalogAutoRefresh')!=='0';const an=$('settingAnti');if(an)an.checked=localStorage.getItem('costalogAlertAnti')!=='0';const vo=$('settingVolume');if(vo)vo.checked=localStorage.getItem('costalogAlertVolume')!=='0'}
 const originalView=view;
 view=function(v){originalView(v);if(v==='answers')renderAnswers();if(v==='settings')renderSettings();if(v==='questions')renderQuestions()};
 setupExtraPages();
