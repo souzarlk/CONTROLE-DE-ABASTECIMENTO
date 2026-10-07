@@ -1,8 +1,6 @@
 name: Inspect PDF Screenshots
 on:
   push:
-    paths:
-      - 'Screenshot_22 (1).pdf'
   workflow_dispatch:
 permissions:
   contents: read
