@@ -31,3 +31,42 @@ document.addEventListener('click',e=>{let v=e.target.closest('[data-view]');if(v
 ['searchInput','employeeFilter','tankFilter','dateFilter'].forEach(id=>$(id).addEventListener(id==='searchInput'?'input':'change',apply));$('clearFilters').onclick=()=>{$('searchInput').value='';$('employeeFilter').value='';$('tankFilter').value='';$('dateFilter').value='';apply()};$('vehicleSearch').oninput=vehicles;$('entryForm').onsubmit=save;theme();
 (function(){let c=$('matrixLayer'),x=c.getContext('2d'),w,h,d;function z(){w=c.width=innerWidth;h=c.height=innerHeight;d=Array(Math.ceil(w/18)).fill(1)}function f(){x.clearRect(0,0,w,h);x.fillStyle='rgba(0,0,0,.4)';x.font='12px monospace';d.forEach((y,i)=>{x.fillText(Math.random()>.5?'1':'0',i*18,y*18);if(y*18>h&&Math.random()>.975)d[i]=0;d[i]++});requestAnimationFrame(f)}z();addEventListener('resize',z);f()})();
 if(sessionStorage.getItem('costalogAuth')){$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');load().catch(console.error)}
+
+/* Páginas complementares: Perguntas, Respostas e Configurações */
+function renderQuestions(){const b=$('questionsNewBtn');if(b)b.onclick=()=>modal(true)}
+function renderAnswers(){
+ const q=($('answerSearch')?.value||'').trim().toUpperCase();
+ const rows=allRows.filter(r=>!q||[r.date,r.time,r.employee,r.plate,String(r.liters),String(r.odo),r['Possuí Antifurto?'],r['Quantos tanque o veículo possui?']].join(' ').toUpperCase().includes(q)).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+ const alerts=rows.filter(r=>!/Sim - ok/i.test(r['Possuí Antifurto?']||'')||r.liters>800).length;
+ $('answerTotal').textContent=fmt(rows.length); $('answerLiters').textContent=fmt(rows.reduce((s,r)=>s+r.liters,0),0)+' L';
+ $('answerVehicles').textContent=fmt(new Set(rows.map(r=>r.plate)).size); $('answerAlerts').textContent=fmt(alerts);
+ $('answersBody').innerHTML=rows.slice(0,300).map((r,i)=>'<tr><td>'+fmt(i+1)+'</td><td>'+br(r.date)+'</td><td>'+esc(r.time)+'</td><td><strong>'+esc(r.employee)+'</strong></td><td><span class="plate-chip">'+esc(r.plate)+'</span></td><td><strong>'+fmt(r.liters,2)+' L</strong></td><td>'+fmt(r.odo)+' km</td><td><span class="status-dot '+(/Sim - ok/i.test(r['Possuí Antifurto?'])?'ok':'warn')+'">'+esc(r['Possuí Antifurto?']||'—')+'</span></td><td>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</td></tr>').join('')||'<tr><td colspan="9" class="no-results">Nenhuma resposta encontrada.</td></tr>';
+}
+function renderSettings(){
+ $('settingsRecords').textContent=fmt(allRows.length);
+ $('settingDark').checked=document.body.classList.contains('dark');
+ $('settingAuto').checked=localStorage.getItem('costalogAutoRefresh')!=='0';
+ $('settingAnti').checked=localStorage.getItem('costalogAlertAnti')!=='0';
+ $('settingVolume').checked=localStorage.getItem('costalogAlertVolume')!=='0';
+}
+function exportAnswers(){
+ const rows=allRows.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+ const head=['DATA','HORA','FUNCIONÁRIO','Placa','Qtd - Litros','Hodômetro','Possuí Antifurto?','Quantos tanque o veículo possui?'];
+ const csvRows=[head,...rows.map(r=>head.map(k=>String(r[k]??'').replaceAll('"','""')))].map(r=>r.map(v=>'"'+v+'"').join(';')).join('\r\n');
+ const blob=new Blob(['\\ufeff'+csvRows],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='respostas-abastecimento-costalog.csv';a.click();URL.revokeObjectURL(a.href);
+}
+function setupExtraPages(){
+ ['answerSearch'].forEach(id=>$(id)?.addEventListener('input',renderAnswers));
+ $('refreshAnswers')?.addEventListener('click',renderAnswers);
+ $('exportAnswersBtn')?.addEventListener('click',exportAnswers);
+ $('answersNewBtn')?.addEventListener('click',()=>modal(true));
+ $('questionsNewBtn')?.addEventListener('click',()=>modal(true));
+ $('settingDark')?.addEventListener('change',e=>{localStorage.setItem('costalogTheme',e.target.checked?'dark':'light');theme()});
+ $('settingAuto')?.addEventListener('change',e=>localStorage.setItem('costalogAutoRefresh',e.target.checked?'1':'0'));
+ $('settingAnti')?.addEventListener('change',e=>localStorage.setItem('costalogAlertAnti',e.target.checked?'1':'0'));
+ $('settingVolume')?.addEventListener('change',e=>localStorage.setItem('costalogAlertVolume',e.target.checked?'1':'0'));
+ $('clearLocalBtn')?.addEventListener('click',()=>{if(confirm('Remover somente os registros criados neste navegador?')){localStorage.removeItem('costalogAbastecimentos');load()}});
+}
+const originalView=view;
+view=function(v){originalView(v);if(v==='answers')renderAnswers();if(v==='settings')renderSettings();if(v==='questions')renderQuestions()};
+setupExtraPages();
