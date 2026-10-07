@@ -1,23 +1,39 @@
 name: Inspect PDF Screenshots
 on:
   push:
+    paths:
+      - '.github/workflows/inspect-pdf.yml'
   workflow_dispatch:
 permissions:
-  contents: read
-  actions: write
+  contents: write
 jobs:
   render:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Render PDF pages
+      - name: Render and OCR PDF
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq poppler-utils
-          mkdir -p rendered
-          pdftoppm -png -r 120 "Screenshot_22 (1).pdf" rendered/page
-      - name: Upload rendered pages
-        uses: actions/upload-artifact@v4
-        with:
-          name: pdf-rendered-pages
-          path: rendered/
+          sudo apt-get install -y -qq poppler-utils tesseract-ocr tesseract-ocr-por
+          mkdir -p rendered ocr
+          pdftoppm -png -r 160 "Screenshot_22 (1).pdf" rendered/page
+          for f in rendered/*.png; do
+            base=$(basename "$f" .png)
+            tesseract "$f" "ocr/$base" -l por+eng 2>/dev/null || true
+          done
+          {
+            echo "OCR DO PDF Screenshot_22 (1).pdf"
+            echo "================================"
+            for f in ocr/*.txt; do
+              echo
+              echo "===== $(basename "$f") ====="
+              cat "$f"
+            done
+          } > pdf-ocr.txt
+      - name: Commit OCR result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pdf-ocr.txt
+          git diff --cached --quiet || git commit -m "chore: extract PDF form fields"
+          git push
