@@ -65,3 +65,10 @@ function renderSettings(){const r=$('settingsRecords');if(r)r.textContent=fmt(al
 const originalView=view;
 view=function(v){originalView(v);if(v==='answers')renderAnswers();if(v==='settings')renderSettings();if(v==='questions')renderQuestions()};
 setupExtraPages();
+
+$('entryPlate')?.addEventListener('input',()=>{const i=$('entryPlate');i.value=i.value.toUpperCase().replace(/[ -]/g,'');updatePlateAutomation();updateOdoAutomation()});
+$('entryOdo')?.addEventListener('input',updateOdoAutomation);
+$('entryLiters')?.addEventListener('input',updateLitersAutomation);
+$('setDateBtn')?.addEventListener('click',()=>showEntryValidation('✓ Data definida para '+br($('entryDate').value)+'.','ok'));
+$('entryDate')?.addEventListener('change',()=>showEntryValidation('Data selecionada: '+br($('entryDate').value)+'. Clique em “Definir” para confirmar.','ok'));
+previewPhoto('entryPhotoPlate','photoPlatePreview');previewPhoto('entryPhotoOdo','photoOdoPreview');previewPhoto('entryPhotoPump','photoPumpPreview');
