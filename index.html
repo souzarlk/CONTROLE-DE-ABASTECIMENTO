@@ -31,10 +31,7 @@
 <header class="topbar"><div class="topbar-inner">
 <div class="brand-lockup"><img src="assets/logo-costalog.svg" alt="Costalog"><div><strong>Abastecimento</strong><span>Controle inteligente da frota</span></div></div>
 <nav class="main-nav" aria-label="Navegação">
-<button class="nav-btn active" data-view="dashboard">Dashboard</button>
-<button class="nav-btn" data-view="history">Abastecimentos</button>
-<button class="nav-btn" data-view="vehicles">Veículos</button>
-<button class="nav-btn" data-view="questions">Perguntas</button>
+<button class="nav-btn active" data-view="questions">Perguntas</button>
 <button class="nav-btn" data-view="answers">Respostas</button>
 <button class="nav-btn" data-view="settings">Configurações</button>
 </nav>
@@ -44,36 +41,7 @@
 <main class="portal-main"><div class="container">
 <div id="loading" class="loading"><div class="spinner"></div><strong>Carregando histórico de abastecimentos...</strong><span>Processando os dados do controle atual.</span></div>
 
-<section id="dashboardView" class="view">
-<div class="hero"><div class="hero-copy"><span class="eyebrow red">CENTRAL COSTALOG</span><h2>Controle de Abastecimento</h2><p>Histórico centralizado, indicadores e acompanhamento operacional da frota.</p></div><button id="newEntryBtn" class="primary-btn hero-btn">＋ Novo abastecimento</button></div>
-<div class="stats-wrap">
-<div class="stats-card accent"><span>Registros</span><strong id="statRecords">—</strong></div>
-<div class="stats-card"><span>Litros abastecidos</span><strong id="statLiters">—</strong></div>
-<div class="stats-card"><span>Veículos</span><strong id="statVehicles">—</strong></div>
-<div class="stats-card"><span>Hodômetro médio</span><strong id="statOdo">—</strong></div>
-<div class="stats-card"><span>Último registro</span><strong id="statLast">—</strong></div>
-</div>
-<div class="dashboard-grid">
-<section class="panel chart-panel"><div class="panel-head"><div><span class="eyebrow">MOVIMENTO</span><h3>Abastecimentos por mês</h3></div><span id="periodLabel" class="muted">—</span></div><div id="monthChart" class="month-chart"></div></section>
-<section class="panel"><div class="panel-head"><div><span class="eyebrow">ATENÇÃO</span><h3>Alertas automáticos</h3></div></div><div id="alerts" class="alerts"></div></section>
-</div>
-<div class="dashboard-grid lower"><section class="panel"><div class="panel-head"><div><span class="eyebrow">DESEMPENHO</span><h3>Funcionários</h3></div></div><div id="employeeRanking" class="ranking"></div></section>
-<section class="panel"><div class="panel-head"><div><span class="eyebrow">RECENTES</span><h3>Últimos abastecimentos</h3></div><button class="link-btn" data-view="history">Ver histórico →</button></div><div id="recentList" class="recent-list"></div></section></div>
-</section>
-
-<section id="historyView" class="view hidden">
-<div class="page-head"><div><span class="eyebrow red">HISTÓRICO</span><h2>Abastecimentos</h2><p>Consulte e filtre todos os registros importados.</p></div><button id="historyNewBtn" class="primary-btn hero-btn">＋ Novo abastecimento</button></div>
-<div class="filters panel"><div class="filter-row">
-<label class="search-field"><span>⌕</span><input id="searchInput" placeholder="Buscar por placa ou funcionário..."></label>
-<select id="dateFilter"><option value="">Todos os períodos</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="365">Último ano</option></select>
-<select id="employeeFilter"><option value="">Todos os funcionários</option></select>
-<select id="tankFilter"><option value="">Todos os tanques</option></select>
-<button id="clearFilters" class="secondary-btn">Limpar</button>
-</div><div class="filter-summary" id="filterSummary">—</div></div>
-<div class="table-panel panel"><div class="table-wrap"><table><thead><tr><th>Data / hora</th><th>Funcionário</th><th>Placa</th><th>Hodômetro</th><th>Litros</th><th>Antifurto</th><th>Tanques</th></tr></thead><tbody id="historyBody"></tbody></table></div><div id="pagination" class="pagination"></div></div>
-</section>
-
-<section id="questionsView" class="view hidden">
+<section id="questionsView" class="view">
 <div class="page-head"><div><span class="eyebrow red">FORMULÁRIO</span><h2>Perguntas</h2><p>Campos utilizados no controle de abastecimento, organizados para conferência e preenchimento.</p></div><button id="questionsNewBtn" class="primary-btn hero-btn">＋ Novo abastecimento</button></div>
 <div class="question-layout">
 <div class="panel question-intro"><span class="question-number">01</span><div><h3>Dados do abastecimento</h3><p>Essas são as perguntas que alimentam a base operacional. Os campos seguem a estrutura do controle atual.</p></div></div>
@@ -119,11 +87,7 @@
 </div>
 </section>
 
-<section id="vehiclesView" class="view hidden">
-<div class="page-head"><div><span class="eyebrow red">FROTA</span><h2>Veículos</h2><p>Resumo individual da movimentação registrada no período.</p></div></div>
-<div class="toolbar panel"><label class="search-field"><span>⌕</span><input id="vehicleSearch" placeholder="Buscar placa..."></label></div>
-<div id="vehicleGrid" class="vehicle-grid"></div>
-</section>
+
 </div></main>
 <footer class="footer"><img src="assets/logo-costalog.svg" alt="Costalog"><span>Uso interno • Controle de Abastecimento Costalog</span><span class="footer-status"><i></i> Dados carregados</span></footer>
 </div>
