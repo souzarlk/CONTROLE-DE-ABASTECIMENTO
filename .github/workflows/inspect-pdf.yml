@@ -1,0 +1,25 @@
+name: Inspect PDF Screenshots
+on:
+  push:
+    paths:
+      - 'Screenshot_22 (1).pdf'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render PDF pages
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          mkdir -p rendered
+          pdftoppm -png -r 120 "Screenshot_22 (1).pdf" rendered/page
+      - name: Upload rendered pages
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-rendered-pages
+          path: rendered/
