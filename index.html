@@ -42,14 +42,22 @@
 <div id="loading" class="loading"><div class="spinner"></div><strong>Carregando histórico de abastecimentos...</strong><span>Processando os dados do controle atual.</span></div>
 
 <section id="questionsView" class="view">
-<div class="page-head"><div><span class="eyebrow red">FORMULÁRIO</span><h2>Perguntas</h2><p>Campos utilizados no controle de abastecimento, organizados para conferência e preenchimento.</p></div><button id="questionsNewBtn" class="primary-btn hero-btn">＋ Novo abastecimento</button></div>
-<div class="question-layout">
-<div class="panel question-intro"><span class="question-number">01</span><div><h3>Dados do abastecimento</h3><p>Essas são as perguntas que alimentam a base operacional. Os campos seguem a estrutura do controle atual.</p></div></div>
-<div class="question-grid">
-<article class="question-card"><span>01</span><div><strong>Data</strong><small>Campo: DATA</small><p>Data em que o abastecimento foi realizado.</p></div><em>date</em></article><article class="question-card"><span>02</span><div><strong>Hora</strong><small>Campo: HORA</small><p>Horário do abastecimento.</p></div><em>time</em></article><article class="question-card"><span>03</span><div><strong>Funcionário</strong><small>Campo: FUNCIONÁRIO</small><p>Motorista ou colaborador responsável.</p></div><em>text</em></article><article class="question-card"><span>04</span><div><strong>Placa</strong><small>Campo: Placa</small><p>Identificação do veículo abastecido.</p></div><em>text</em></article><article class="question-card"><span>05</span><div><strong>Quantidade de litros</strong><small>Campo: Qtd - Litros</small><p>Volume abastecido, em litros.</p></div><em>number</em></article><article class="question-card"><span>06</span><div><strong>Hodômetro</strong><small>Campo: Hodômetro</small><p>Quilometragem registrada no momento do abastecimento.</p></div><em>number</em></article><article class="question-card"><span>07</span><div><strong>Possui antifurto?</strong><small>Campo: Possuí Antifurto?</small><p>Situação do dispositivo antifurto informado no controle.</p></div><em>select</em></article><article class="question-card"><span>08</span><div><strong>Quantidade de tanques</strong><small>Campo: Quantos tanque o veículo possui?</small><p>Quantidade de tanques do veículo.</p></div><em>select</em></article>
+<div class="page-head"><div><span class="eyebrow red">FORMULÁRIO OPERACIONAL</span><h2>Perguntas</h2><p>Formulário de abastecimento inspirado no controle original do Driver, com preenchimento guiado, validações e automações.</p></div><button id="questionsNewBtn" class="primary-btn hero-btn">＋ Novo abastecimento</button></div>
+<div class="panel driver-intro"><div class="driver-intro-icon">01</div><div><strong>CONTROLE DE ABASTECIMENTO — POSTO COSTALOG</strong><h3>Registro completo do abastecimento</h3><p>Preencha os campos abaixo. O sistema reconhece funcionários e placas já cadastrados, sugere informações e sinaliza inconsistências antes de salvar.</p></div><div class="driver-badge">AUTOMATIZADO</div></div>
+<div class="question-grid driver-grid">
+<article class="question-card"><span>01</span><div><strong>DATA *</strong><small>Selecionar a data do abastecimento.</small><p>O sistema sugere automaticamente a data atual.</p></div><em>date</em></article>
+<article class="question-card"><span>02</span><div><strong>HORA</strong><small>Horário do abastecimento.</small><p>Preenchido automaticamente e pode ser ajustado.</p></div><em>time</em></article>
+<article class="question-card"><span>03</span><div><strong>FUNCIONÁRIO *</strong><small>Selecionar o motorista/colaborador.</small><p>Lista inteligente baseada no histórico existente.</p></div><em>select</em></article>
+<article class="question-card"><span>04</span><div><strong>PLACA *</strong><small>Escrever a placa do caminhão, sem traço e sem espaço.</small><p>Validação e sugestão automática das placas já cadastradas.</p></div><em>plate</em></article>
+<article class="question-card"><span>05</span><div><strong>FOTO — PLACA</strong><small>Tirar uma foto da placa do caminhão.</small><p>Permite selecionar câmera ou arquivo do dispositivo.</p></div><em>photo</em></article>
+<article class="question-card"><span>06</span><div><strong>HODÔMETRO *</strong><small>Digitar com muita atenção o hodômetro do caminhão.</small><p>O sistema compara com o último registro da placa.</p></div><em>number</em></article>
+<article class="question-card"><span>07</span><div><strong>FOTO — HODÔMETRO</strong><small>Tirar uma foto do hodômetro do caminhão.</small><p>Anexo visual para conferência do registro.</p></div><em>photo</em></article>
+<article class="question-card"><span>08</span><div><strong>QTD. — LITROS *</strong><small>Informar quantos litros foram abastecidos no veículo.</small><p>O sistema calcula indicadores e alerta volumes elevados.</p></div><em>number</em></article>
+<article class="question-card"><span>09</span><div><strong>FOTO — BOMBA</strong><small>Tirar uma foto da bomba após o abastecimento do veículo.</small><p>Anexo visual do abastecimento realizado.</p></div><em>photo</em></article>
+<article class="question-card"><span>10</span><div><strong>POSSUI ANTIFURTO? *</strong><small>Informar se o caminhão possui antifurto no tanque e se está em ordem.</small><p>Opções: Sim - ok • Sim - Apresenta danos • Não.</p></div><em>select</em></article>
+<article class="question-card"><span>11</span><div><strong>QUANTOS TANQUES O VEÍCULO POSSUI? *</strong><small>Informar a quantidade de tanques do veículo.</small><p>O sistema utiliza essa informação nas validações do abastecimento.</p></div><em>select</em></article>
 </div>
-<div class="panel question-note"><strong>Automatizações previstas</strong><div class="automation-list"><span>✓ Validação de placa</span><span>✓ Registro de data e hora</span><span>✓ Indicadores automáticos</span><span>✓ Alertas de inconsistência</span><span>✓ Histórico pesquisável</span></div></div>
-</div>
+<div class="panel question-note"><strong>Automatizações deste formulário</strong><div class="automation-list"><span>✓ Data e hora sugeridas</span><span>✓ Funcionário por histórico</span><span>✓ Placa sem espaços/traços</span><span>✓ Conferência do hodômetro</span><span>✓ Pré-visualização das fotos</span><span>✓ Alertas de antifurto e volume</span></div></div>
 </section>
 
 <section id="answersView" class="view hidden">
@@ -92,20 +100,35 @@
 <footer class="footer"><img src="assets/logo-costalog.svg" alt="Costalog"><span>Uso interno • Controle de Abastecimento Costalog</span><span class="footer-status"><i></i> Dados carregados</span></footer>
 </div>
 
-<div id="entryModal" class="modal hidden"><div class="modal-backdrop" data-close></div><div class="modal-card">
-<div class="modal-head"><div><span class="eyebrow red">NOVO REGISTRO</span><h2>Registrar abastecimento</h2><p>Preencha os dados. Litros e validações são calculados automaticamente.</p></div><button class="close-btn" data-close>×</button></div>
-<form id="entryForm"><div class="form-grid">
-<div class="field"><label>Data</label><input id="entryDate" type="date" required></div>
-<div class="field"><label>Hora</label><input id="entryTime" type="time" required></div>
-<div class="field"><label>Funcionário</label><input id="entryEmployee" required placeholder="Nome do motorista"></div>
-<div class="field"><label>Placa</label><input id="entryPlate" required placeholder="ABC1D23" maxlength="8"></div>
-<div class="field"><label>Hodômetro</label><input id="entryOdo" type="number" min="0" step="1" required></div>
-<div class="field"><label>Qtd. de litros</label><input id="entryLiters" type="number" min="0" step="0.01" required></div>
-<div class="field"><label>Possui antifurto?</label><select id="entryAnti"><option>Sim - ok</option><option>Não</option><option>Sim - Apresenta danos</option></select></div>
-<div class="field"><label>Quantidade de tanques</label><select id="entryTanks"><option>1</option><option selected>2</option></select></div>
-<div class="field full"><label>Observação</label><input id="entryObs" placeholder="Opcional"></div>
-</div><div class="notice">Este cadastro é salvo neste navegador enquanto a integração com a base central não estiver conectada. Os registros históricos continuam preservados e não são alterados.</div>
-<div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancelar</button><button class="primary-btn" type="submit">Salvar registro</button></div></form>
-</div></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script><script src="app.js?v=20261007e"></script>
+<div id="entryModal" class="modal hidden"><div class="modal-backdrop" data-close></div><div class="modal-card entry-modal-card">
+<div class="modal-head"><div><span class="eyebrow red">NOVO REGISTRO</span><h2>Controle de abastecimento</h2><p>Preencha as perguntas do formulário original com validações automáticas.</p></div><button class="close-btn" data-close>×</button></div>
+<form id="entryForm">
+<div class="form-section-title"><span>01</span><div><strong>Data e responsável</strong><small>Informações básicas do abastecimento.</small></div></div>
+<div class="form-grid">
+<div class="field"><label>Data <b>*</b></label><div class="date-action"><input id="entryDate" type="date" required><button type="button" id="setDateBtn" class="mini-btn">Definir</button></div><small>Selecione a data e confirme em “Definir”.</small></div>
+<div class="field"><label>Hora</label><input id="entryTime" type="time"><small>Sugerida automaticamente.</small></div>
+<div class="field full"><label>Funcionário <b>*</b></label><input id="entryEmployee" list="employeeOptions" autocomplete="off" required placeholder="Selecione ou digite o funcionário"><datalist id="employeeOptions"></datalist><small>Opções baseadas nos registros existentes.</small></div>
+</div>
+<div class="form-section-title"><span>02</span><div><strong>Identificação do veículo</strong><small>Placa e evidências visuais.</small></div></div>
+<div class="form-grid">
+<div class="field"><label>Placa <b>*</b></label><input id="entryPlate" list="plateOptions" autocomplete="off" required placeholder="ABC1D23" maxlength="7" inputmode="text"><datalist id="plateOptions"></datalist><small>Digite sem traço e sem espaço.</small><div id="plateFeedback" class="field-feedback"></div></div>
+<div class="field"><label>Foto — Placa</label><input id="entryPhotoPlate" class="photo-input" type="file" accept="image/*" capture="environment"><div id="photoPlatePreview" class="photo-preview"></div></div>
+</div>
+<div class="form-section-title"><span>03</span><div><strong>Abastecimento e conferência</strong><small>Valores que serão usados nos indicadores.</small></div></div>
+<div class="form-grid">
+<div class="field"><label>Hodômetro <b>*</b></label><input id="entryOdo" type="number" min="0" step="1" required placeholder="Ex.: 245680"><small id="odoHint">Digite com muita atenção o hodômetro.</small><div id="odoFeedback" class="field-feedback"></div></div>
+<div class="field"><label>Foto — Hodômetro</label><input id="entryPhotoOdo" class="photo-input" type="file" accept="image/*" capture="environment"><div id="photoOdoPreview" class="photo-preview"></div></div>
+<div class="field"><label>Qtd. — Litros <b>*</b></label><input id="entryLiters" type="number" min="0.01" step="0.01" required placeholder="Ex.: 320,00"><small>Informe quantos litros foram abastecidos.</small><div id="litersFeedback" class="field-feedback"></div></div>
+<div class="field"><label>Foto — Bomba</label><input id="entryPhotoPump" class="photo-input" type="file" accept="image/*" capture="environment"><div id="photoPumpPreview" class="photo-preview"></div></div>
+</div>
+<div class="form-section-title"><span>04</span><div><strong>Segurança do tanque</strong><small>Informações obrigatórias do formulário original.</small></div></div>
+<div class="form-grid">
+<div class="field"><label>Possui Antifurto? <b>*</b></label><select id="entryAnti" required><option value="">Selecione uma opção</option><option>Sim - ok</option><option>Sim - Apresenta danos</option><option>Não</option></select></div>
+<div class="field"><label>Quantos tanques o veículo possui? <b>*</b></label><select id="entryTanks" required><option value="">Selecione</option><option>1</option><option>2</option></select></div>
+</div>
+<div id="entryValidation" class="validation-box hidden"></div>
+<div class="notice"><strong>Importante:</strong> este registro é salvo localmente neste navegador. A base histórica do Driver permanece somente para consulta; os novos registros não são compartilhados automaticamente com outros computadores até conectarmos uma base central.</div>
+<div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancelar</button><button class="primary-btn save-entry-btn" type="submit">✓ Registrar abastecimento</button></div>
+</form></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script><script src="app.js?v=20261007f"></script>
 </body></html>
