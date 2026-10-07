@@ -2,14 +2,14 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="theme-color" content="#e30613"><title>Controle de Abastecimento Costalog</title>
-<link rel="stylesheet" href="style.css?v=20261007">
+<meta name="theme-color" content="#e30613"><title>Controle de Abastecimento | Costalog</title>
+<link rel="stylesheet" href="style.css?v=20261007b">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
 <canvas class="matrix-layer" id="matrixLayer" aria-hidden="true"></canvas>
 <div class="login-glow login-glow-one"></div><div class="login-glow login-glow-two"></div>
-<div class="login-brand"><img src="assets/logo-costalog.svg?v=1" alt="Costalog"></div>
+<div class="login-brand"><img src="assets/logo-costalog.svg" alt="Costalog"></div>
 <div class="login-card">
 <div class="login-card-top"><span class="login-dot"></span><span>SISTEMA COSTALOG</span></div>
 <span class="eyebrow">ACESSO RESTRITO</span>
@@ -18,24 +18,77 @@
 <form id="loginForm">
 <label for="accessPassword">Senha de acesso</label>
 <div class="password-wrap"><input id="accessPassword" type="password" autocomplete="current-password" placeholder="Digite sua senha" required>
-<button type="button" id="togglePassword" aria-label="Mostrar senha" title="Mostrar senha">
-<svg class="eye-icon eye-open" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
-<svg class="eye-icon eye-closed" viewBox="0 0 24 24"><path d="M3 3l18 18"></path><path d="M10.6 6.2A10.7 10.7 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3.2 3.7"></path><path d="M6.1 6.8C3.8 8.3 2.5 12 2.5 12s3.5 6 9.5 6c1.5 0 2.8-.3 4-.8"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path></svg>
-</button></div>
-<button class="primary-btn login-submit" type="submit"><span>Entrar no portal</span><span class="btn-arrow">→</span></button>
+<button type="button" id="togglePassword" aria-label="Mostrar senha"><span>◉</span></button></div>
+<button class="primary-btn login-submit" type="submit"><span>Entrar no portal</span><b>→</b></button>
 <div id="loginError" class="form-error"></div>
 </form>
 <div class="login-security"><span class="security-icon">⌁</span><span>Acesso protegido • Ambiente interno</span></div>
 </div>
 <div class="login-footer">Controle de Abastecimento Costalog - Criado e desenvolvido pela equipe de informática.</div>
 </div>
+
 <div id="app" class="app hidden">
-<header class="topbar"><div class="topbar-inner"><div class="brand-lockup"><img src="assets/logo-costalog.svg" alt="Costalog"><div><strong>Abastecimento</strong><span>Controle da frota</span></div></div><div class="top-actions"><span class="role-badge">USUÁRIO</span><button id="themeToggle" class="theme-toggle" type="button">☾</button><button id="logoutBtn" class="ghost-btn">Sair</button></div></div></header>
+<header class="topbar"><div class="topbar-inner">
+<div class="brand-lockup"><img src="assets/logo-costalog.svg" alt="Costalog"><div><strong>Abastecimento</strong><span>Controle inteligente da frota</span></div></div>
+<nav class="main-nav" aria-label="Navegação"><button class="nav-btn active" data-view="dashboard">Dashboard</button><button class="nav-btn" data-view="history">Abastecimentos</button><button class="nav-btn" data-view="vehicles">Veículos</button></nav>
+<div class="top-actions"><span class="role-badge">USUÁRIO</span><button id="themeToggle" class="theme-toggle" type="button">☾</button><button id="logoutBtn" class="ghost-btn">Sair</button></div>
+</div></header>
+
 <main class="portal-main"><div class="container">
-<section class="hero"><div><span class="eyebrow red">CENTRAL COSTALOG</span><h2>Controle de Abastecimento</h2><p>Uma nova central para registrar abastecimentos, acompanhar consumo e automatizar os indicadores da frota.</p></div></section>
-<section class="coming"><div class="coming-icon">⛽</div><h3>Estrutura pronta para receber os dados do controle atual</h3><p>O login já utiliza a mesma identidade visual do portal de certificados. Na próxima etapa, vamos transformar todos os campos do seu controle atual em um painel automatizado.</p><div class="next-grid"><div><strong>01</strong><span>Cadastro de abastecimentos</span></div><div><strong>02</strong><span>Histórico e filtros</span></div><div><strong>03</strong><span>Indicadores de consumo</span></div><div><strong>04</strong><span>Relatórios automatizados</span></div></div></section>
-</div></main>
-<footer class="footer"><img src="assets/logo-costalog.svg" alt="Costalog"><span>Uso interno • Controle de Abastecimento Costalog</span></footer>
+<div id="loading" class="loading"><div class="spinner"></div><strong>Carregando histórico de abastecimentos...</strong><span>Processando os dados do controle atual.</span></div>
+
+<section id="dashboardView" class="view">
+<div class="hero"><div class="hero-copy"><span class="eyebrow red">CENTRAL COSTALOG</span><h2>Controle de Abastecimento</h2><p>Histórico centralizado, indicadores e acompanhamento operacional da frota.</p></div><button id="newEntryBtn" class="primary-btn hero-btn">＋ Novo abastecimento</button></div>
+<div class="stats-wrap">
+<div class="stats-card accent"><span>Registros</span><strong id="statRecords">—</strong></div>
+<div class="stats-card"><span>Litros abastecidos</span><strong id="statLiters">—</strong></div>
+<div class="stats-card"><span>Veículos</span><strong id="statVehicles">—</strong></div>
+<div class="stats-card"><span>Hodômetro médio</span><strong id="statOdo">—</strong></div>
+<div class="stats-card"><span>Último registro</span><strong id="statLast">—</strong></div>
 </div>
-<script src="app.js?v=20261007"></script>
+<div class="dashboard-grid">
+<section class="panel chart-panel"><div class="panel-head"><div><span class="eyebrow">MOVIMENTO</span><h3>Abastecimentos por mês</h3></div><span id="periodLabel" class="muted">—</span></div><div id="monthChart" class="month-chart"></div></section>
+<section class="panel"><div class="panel-head"><div><span class="eyebrow">ATENÇÃO</span><h3>Alertas automáticos</h3></div></div><div id="alerts" class="alerts"></div></section>
+</div>
+<div class="dashboard-grid lower"><section class="panel"><div class="panel-head"><div><span class="eyebrow">DESEMPENHO</span><h3>Funcionários</h3></div></div><div id="employeeRanking" class="ranking"></div></section>
+<section class="panel"><div class="panel-head"><div><span class="eyebrow">RECENTES</span><h3>Últimos abastecimentos</h3></div><button class="link-btn" data-view="history">Ver histórico →</button></div><div id="recentList" class="recent-list"></div></section></div>
+</section>
+
+<section id="historyView" class="view hidden">
+<div class="page-head"><div><span class="eyebrow red">HISTÓRICO</span><h2>Abastecimentos</h2><p>Consulte e filtre todos os registros importados.</p></div><button id="historyNewBtn" class="primary-btn hero-btn">＋ Novo abastecimento</button></div>
+<div class="filters panel"><div class="filter-row">
+<label class="search-field"><span>⌕</span><input id="searchInput" placeholder="Buscar por placa ou funcionário..."></label>
+<select id="dateFilter"><option value="">Todos os períodos</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="365">Último ano</option></select>
+<select id="employeeFilter"><option value="">Todos os funcionários</option></select>
+<select id="tankFilter"><option value="">Todos os tanques</option></select>
+<button id="clearFilters" class="secondary-btn">Limpar</button>
+</div><div class="filter-summary" id="filterSummary">—</div></div>
+<div class="table-panel panel"><div class="table-wrap"><table><thead><tr><th>Data / hora</th><th>Funcionário</th><th>Placa</th><th>Hodômetro</th><th>Litros</th><th>Antifurto</th><th>Tanques</th></tr></thead><tbody id="historyBody"></tbody></table></div><div id="pagination" class="pagination"></div></div>
+</section>
+
+<section id="vehiclesView" class="view hidden">
+<div class="page-head"><div><span class="eyebrow red">FROTA</span><h2>Veículos</h2><p>Resumo individual da movimentação registrada no período.</p></div></div>
+<div class="toolbar panel"><label class="search-field"><span>⌕</span><input id="vehicleSearch" placeholder="Buscar placa..."></label></div>
+<div id="vehicleGrid" class="vehicle-grid"></div>
+</section>
+</div></main>
+<footer class="footer"><img src="assets/logo-costalog.svg" alt="Costalog"><span>Uso interno • Controle de Abastecimento Costalog</span><span class="footer-status"><i></i> Dados carregados</span></footer>
+</div>
+
+<div id="entryModal" class="modal hidden"><div class="modal-backdrop" data-close></div><div class="modal-card">
+<div class="modal-head"><div><span class="eyebrow red">NOVO REGISTRO</span><h2>Registrar abastecimento</h2><p>Preencha os dados. Litros e validações são calculados automaticamente.</p></div><button class="close-btn" data-close>×</button></div>
+<form id="entryForm"><div class="form-grid">
+<div class="field"><label>Data</label><input id="entryDate" type="date" required></div>
+<div class="field"><label>Hora</label><input id="entryTime" type="time" required></div>
+<div class="field"><label>Funcionário</label><input id="entryEmployee" required placeholder="Nome do motorista"></div>
+<div class="field"><label>Placa</label><input id="entryPlate" required placeholder="ABC1D23" maxlength="8"></div>
+<div class="field"><label>Hodômetro</label><input id="entryOdo" type="number" min="0" step="1" required></div>
+<div class="field"><label>Qtd. de litros</label><input id="entryLiters" type="number" min="0" step="0.01" required></div>
+<div class="field"><label>Possui antifurto?</label><select id="entryAnti"><option>Sim - ok</option><option>Não</option><option>Sim - Apresenta danos</option></select></div>
+<div class="field"><label>Quantidade de tanques</label><select id="entryTanks"><option>1</option><option selected>2</option></select></div>
+<div class="field full"><label>Observação</label><input id="entryObs" placeholder="Opcional"></div>
+</div><div class="notice">Este cadastro é salvo neste navegador enquanto a integração com a base central não estiver conectada. Os registros históricos continuam preservados e não são alterados.</div>
+<div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancelar</button><button class="primary-btn" type="submit">Salvar registro</button></div></form>
+</div></div>
+<script src="app.js?v=20261007b"></script>
 </body></html>
