@@ -133,7 +133,8 @@ async function save(e){
    const liters=+(get('entryLiters').value||0),anti=get('entryAnti').value,tanks=get('entryTanks').value;
    const photoPlate=get('entryPhotoPlate')?.files?.[0],photoOdo=get('entryPhotoOdo')?.files?.[0],photoPump=get('entryPhotoPump')?.files?.[0];
    const o={'DATA':get('entryDate').value,'HORA':get('entryTime').value,'FUNCIONÁRIO':employee,'Placa':plate,'Qtd - Litros':String(liters),'Hodômetro':String(odo),'Possuí Antifurto?':anti,'Quantos tanque o veículo possui?':tanks,employee,plate,odo,liters,date:get('entryDate').value,time:get('entryTime').value,photoPlate:photoPlate?('localphoto:'+localId+':plate'):'',photoOdo:photoOdo?('localphoto:'+localId+':odo'):'',photoPump:photoPump?('localphoto:'+localId+':pump'):'',photoPlateName:photoPlate?.name||'',photoOdoName:photoOdo?.name||'',photoPumpName:photoPump?.name||'',photoCount:[photoPlate,photoOdo,photoPump].filter(Boolean).length};
-   await Promise.all([[photoPlate,'plate'],[photoOdo,'odo'],[photoPump,'pump']].filter(x=>x[0]).map(x=>saveLocalPhoto(localId+':'+x[1],x[0])));
+   const photoJobs=[[photoPlate,'plate'],[photoOdo,'odo'],[photoPump,'pump']].filter(x=>x[0]).map(x=>saveLocalPhoto(localId+':'+x[1],x[0]));
+   await Promise.all(photoJobs);
    let arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
    arr.push(o);
    localStorage.setItem('costalogAbastecimentos',JSON.stringify(arr));
@@ -153,7 +154,7 @@ async function save(e){
 async function login(e){e.preventDefault();let h=await sha($('accessPassword').value);if(h!==PASS.admin&&h!==PASS.user){$('loginError').textContent='Senha incorreta. Verifique os dados e tente novamente.';return}$('loginError').textContent='';sessionStorage.setItem('costalogAuth','1');$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');load().catch(err=>{$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>Confira o arquivo CSV no repositório.</span>';console.error(err)})}
 function theme(){let d=localStorage.getItem('costalogTheme')==='dark';document.body.classList.toggle('dark-mode',d);const b=$('themeToggle');if(b)b.textContent=d?'☀':'☾';renderSettings?.()}
 $('loginForm').addEventListener('submit',login);$('togglePassword').onclick=()=>{$('accessPassword').type=$('accessPassword').type==='password'?'text':'password'};$('logoutBtn').onclick=()=>{sessionStorage.removeItem('costalogAuth');location.reload()};$('themeToggle').onclick=()=>{localStorage.setItem('costalogTheme',document.body.classList.contains('dark-mode')?'light':'dark');theme()};
-document.addEventListener('click',e=>{let v=e.target.closest('[data-view]');if(v)view(v.dataset.view);if(e.target.closest('[data-close]'))modal(false);if(e.target.closest('#newEntryBtn,#historyNewBtn'))modal(true);let p=e.target.closest('[data-page]');if(p&&!p.disabled){currentPage=+p.dataset.page;history()}});
+document.addEventListener('click',e=>{const dl=e.target.closest('[data-local-download]');if(dl){e.preventDefault();downloadLocalPhoto(dl.dataset.localDownload,dl.dataset.photoTitle);return}let v=e.target.closest('[data-view]');if(v)view(v.dataset.view);if(e.target.closest('[data-close]'))modal(false);if(e.target.closest('#newEntryBtn,#historyNewBtn'))modal(true);let p=e.target.closest('[data-page]');if(p&&!p.disabled){currentPage=+p.dataset.page;history()}});
 $('entryForm').onsubmit=save;setupPhotoInputs();theme();
 (function(){let c=$('matrixLayer'),x=c.getContext('2d'),w,h,d;function z(){w=c.width=innerWidth;h=c.height=innerHeight;d=Array(Math.ceil(w/18)).fill(1)}function f(){x.clearRect(0,0,w,h);x.fillStyle='rgba(0,0,0,.4)';x.font='12px monospace';d.forEach((y,i)=>{x.fillText(Math.random()>.5?'1':'0',i*18,y*18);if(y*18>h&&Math.random()>.975)d[i]=0;d[i]++});requestAnimationFrame(f)}z();addEventListener('resize',z);f()})();
 theme();
@@ -274,8 +275,25 @@ function openPhotoDB(){
  });
 }
 async function saveLocalPhoto(key,file){
- if(!file)return;
- try{const db=await openPhotoDB();await new Promise((res,rej)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put({blob:file,type:file.type,name:file.name},key);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});db.close()}catch(e){console.warn('Foto local não armazenada:',e)}
+ if(!file)return true;
+ const db=await openPhotoDB();
+ try{
+   await new Promise((res,rej)=>{
+     const tx=db.transaction('photos','readwrite');
+     tx.objectStore('photos').put({blob:file,type:file.type,name:file.name,size:file.size,updatedAt:Date.now()},key);
+     tx.oncomplete=()=>res();
+     tx.onerror=()=>rej(tx.error||new Error('Falha ao gravar a foto'));
+     tx.onabort=()=>rej(tx.error||new Error('Falha ao gravar a foto'));
+   });
+   const saved=await new Promise((res,rej)=>{
+     const tx=db.transaction('photos','readonly');
+     const req=tx.objectStore('photos').get(key);
+     req.onsuccess=()=>res(req.result);
+     req.onerror=()=>rej(req.error||new Error('Falha ao verificar a foto'));
+   });
+   if(!saved?.blob||Number(saved.size)!==Number(file.size))throw new Error('A foto não passou na verificação de salvamento');
+   return true;
+ }finally{db.close()}
 }
 async function getLocalPhoto(key){
  try{const db=await openPhotoDB();const value=await new Promise((res,rej)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(key);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});db.close();return value||null}catch(e){console.warn('Foto local não encontrada:',e);return null}
@@ -308,16 +326,34 @@ function photoSource(v){
 }
 function photoHref(v){return photoSource(v).view}
 function isImageValue(v){return photoSource(v).kind!=='none'&&photoSource(v).kind!=='name'}
+async function downloadLocalPhoto(value,title){
+ const rec=await getLocalPhoto(String(value||'').slice(10));
+ if(!rec?.blob){alert('A foto não está disponível neste navegador. O registro não será tratado como salvo até que a foto seja armazenada corretamente.');return false}
+ const url=URL.createObjectURL(rec.blob);
+ const a=document.createElement('a');a.href=url;a.download=rec.name||((title||'foto-abastecimento').toLowerCase().replace(/[^a-z0-9]+/gi,'-')+'.jpg');document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),10000);
+ return true;
+}
 async function openPhotoViewer(value,title){
- let src=photoSource(value);
- if(src.kind==='local'){const rec=await getLocalPhoto(String(value).slice(10));if(!rec?.blob){alert('A imagem local não foi encontrada neste navegador.');return}const url=URL.createObjectURL(rec.blob);src={view:url,download:url,kind:'blob'};setTimeout(()=>URL.revokeObjectURL(url),120000)}
- if(!src.view)return;
+ const source=photoSource(value);
+ let src='',downloadUrl='',local=false;
+ if(source.kind==='local'){
+   const rec=await getLocalPhoto(String(value).slice(10));
+   if(!rec?.blob){alert('A foto anexada não foi encontrada no armazenamento deste navegador.');return}
+   src=URL.createObjectURL(rec.blob);downloadUrl=src;local=true;
+ }else{
+   src=source.view;downloadUrl=source.download||source.view;
+ }
+ if(!src)return;
  const modalEl=$('answerDetailModal'),body=$('answerDetailBody');if(!modalEl||!body)return;
  $('answerDetailTitle').textContent=title||'Evidência';
- $('answerDetailSubtitle').textContent='Visualização da imagem anexada';
- body.innerHTML='<div class="photo-viewer"><div class="photo-viewer-stage"><img src="'+esc(src.view)+'" alt="'+esc(title||'Evidência')+'" onerror="this.closest(\'.photo-viewer-stage\').innerHTML=\'<div class=\\\'photo-load-error\\\'>Não foi possível carregar esta imagem. Verifique se o arquivo do Google Drive está compartilhado para visualização.</div>\'"></div><div class="photo-viewer-actions"><a class="primary-btn" href="'+esc(src.download||src.view)+'" download target="_blank" rel="noopener">⇩ Baixar imagem</a><a class="secondary-btn" href="'+esc(src.view)+'" target="_blank" rel="noopener">Abrir arquivo ↗</a></div></div>';
+ $('answerDetailSubtitle').textContent=local?'Imagem anexada e armazenada localmente':'Visualização da imagem anexada';
+ const safeTitle=esc(title||'Evidência');
+ body.innerHTML='<div class="photo-viewer"><div class="photo-viewer-stage"><img src="'+esc(src)+'" alt="'+safeTitle+'" onerror="this.closest(\\'.photo-viewer-stage\\').innerHTML=\\'<div class=\\\'photo-load-error\\\'>Não foi possível exibir esta imagem neste navegador.</div>\\'"></div><div class="photo-viewer-actions">'+(local?'<button type="button" class="primary-btn" data-local-download="'+esc(String(value))+'" data-photo-title="'+safeTitle+'">⇩ Baixar imagem</button>':'<a class="primary-btn" href="'+esc(downloadUrl)+'" download target="_blank" rel="noopener">⇩ Baixar imagem</a><a class="secondary-btn" href="'+esc(src)+'" target="_blank" rel="noopener">Abrir arquivo ↗</a>')+'</div></div>';
  modalEl.classList.remove('hidden');
+ if(local)setTimeout(()=>URL.revokeObjectURL(src),120000);
 }
+
 function isImageValue(v){const k=photoSource(v).kind;return k!=='none'&&k!=='name'}
 function isDirectImageValue(v){const k=photoSource(v).kind;return k==='url'||k==='drive'||k==='data'||k==='blob'}
 async function hydrateLocalPhotoButton(button,value,title){
