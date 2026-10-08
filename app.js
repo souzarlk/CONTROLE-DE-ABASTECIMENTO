@@ -349,7 +349,7 @@ async function openPhotoViewer(value,title){
  $('answerDetailTitle').textContent=title||'Evidência';
  $('answerDetailSubtitle').textContent=local?'Imagem anexada e armazenada localmente':'Visualização da imagem anexada';
  const safeTitle=esc(title||'Evidência');
- body.innerHTML='<div class="photo-viewer"><div class="photo-viewer-stage"><img src="'+esc(src)+'" alt="'+safeTitle+'" onerror="this.closest(\\'.photo-viewer-stage\\').innerHTML=\\'<div class=\\\'photo-load-error\\\'>Não foi possível exibir esta imagem neste navegador.</div>\\'"></div><div class="photo-viewer-actions">'+(local?'<button type="button" class="primary-btn" data-local-download="'+esc(String(value))+'" data-photo-title="'+safeTitle+'">⇩ Baixar imagem</button>':'<a class="primary-btn" href="'+esc(downloadUrl)+'" download target="_blank" rel="noopener">⇩ Baixar imagem</a><a class="secondary-btn" href="'+esc(src)+'" target="_blank" rel="noopener">Abrir arquivo ↗</a>')+'</div></div>';
+ body.innerHTML='<div class="photo-viewer"><div class="photo-viewer-stage"><img src="'+esc(src)+'" alt="'+safeTitle+'"></div><div class="photo-viewer-actions">'+(local?'<button type="button" class="primary-btn" data-local-download="'+esc(String(value))+'" data-photo-title="'+safeTitle+'">⇩ Baixar imagem</button>':'<a class="primary-btn" href="'+esc(downloadUrl)+'" download target="_blank" rel="noopener">⇩ Baixar imagem</a><a class="secondary-btn" href="'+esc(src)+'" target="_blank" rel="noopener">Abrir arquivo ↗</a>')+'</div></div>';
  modalEl.classList.remove('hidden');
  if(local)setTimeout(()=>URL.revokeObjectURL(src),120000);
 }
