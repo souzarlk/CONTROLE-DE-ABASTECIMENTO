@@ -289,3 +289,43 @@ body.dark-mode{--black:#f5f5f5;--gray-300:#444;--gray-500:#aaa;--shadow:0 18px 5
 .dark-mode .answers-response-bar,.dark-mode .answer-question-card,.dark-mode .answer-controls,.dark-mode .question-answer-panel,.dark-mode .individual-panel{background:#1b1b1f;border-color:#303035}.dark-mode .answers-title-row p,.dark-mode .answer-card-head span,.dark-mode .control-summary span,.dark-mode .answer-list-item,.dark-mode .file-item,.dark-mode .answers-table td,.dark-mode .question-answer-head p,.dark-mode .individual-head p{color:#aaa}.dark-mode .answer-card-head h3,.dark-mode .month-name,.dark-mode .hour-label,.dark-mode .answers-table th{color:#eee}.dark-mode .control-search,.dark-mode .control-field input,.dark-mode .control-field select,.dark-mode .question-selector button,.dark-mode .evidence-card{background:#151519;border-color:#3a3a40;color:#eee}.dark-mode .control-summary,.dark-mode .answer-question-card,.dark-mode .question-answer-content{border-color:#303035}.dark-mode .donut-chart:after{background:#1b1b1f}.dark-mode .donut-center{color:#fff}.dark-mode .response-tab{color:#aaa}.dark-mode .response-tab.active{color:#ff6a72}.dark-mode .answer-list-item,.dark-mode .file-item{background:#222228;border-color:#303035}.dark-mode .answers-table tbody tr:hover{background:#242024}.dark-mode .day-pill,.dark-mode .time-pill{background:#29292e;color:#bbb}.dark-mode .day-pill b,.dark-mode .time-pill b{background:#3b3b42;color:#ddd}
 @media(max-width:950px){.answer-controls{grid-template-columns:1fr 1fr 1fr}.control-search{grid-column:1/-1}.control-summary{grid-column:1/-1}.answers-title-row{align-items:flex-start}.response-actions{display:none}}
 @media(max-width:700px){.answers-google-shell{padding:0 0 25px}.answers-title-row{display:block}.answers-title-actions{margin-top:12px}.answers-title-actions .primary-btn,.answers-title-actions .secondary-btn{width:auto}.answers-response-bar{overflow:auto;gap:14px}.response-tabs{gap:12px}.response-count{min-width:85px}.answers-card-grid{grid-template-columns:1fr}.answer-wide{grid-column:auto}.answer-controls{grid-template-columns:1fr 1fr}.control-search{grid-column:1/-1}.control-summary{grid-column:1/-1}.chart-layout{flex-direction:column;gap:15px}.chart-legend{width:100%;max-width:none}.detail-summary,.detail-grid,.evidence-grid{grid-template-columns:1fr}.month-row{grid-template-columns:58px 1fr}.month-name{font-size:8px}}
+
+/* Respostas — acabamento executivo */
+.response-count-button{appearance:none;border:0;cursor:pointer;text-align:left;display:flex;flex-direction:column;justify-content:center;min-width:180px;padding:14px 18px;background:linear-gradient(135deg,#fff,#fafafa);border:1px solid #e9e9eb;border-radius:16px;transition:.2s}
+.response-count-button:hover{border-color:#f0a3a8;box-shadow:0 10px 26px rgba(227,6,19,.08);transform:translateY(-1px)}
+.response-count-button strong{font-size:28px;line-height:1;color:#161619;letter-spacing:-.04em}
+.response-count-button span{font-size:11px;color:#777;margin-top:4px}
+.response-count-button small{font-size:9px;color:var(--red);font-weight:850;margin-top:7px}
+.answers-card-grid{align-items:stretch}
+.answer-question-card{border-radius:20px;border-color:#e6e7ea;box-shadow:0 8px 30px rgba(15,18,25,.045);transition:box-shadow .2s,border-color .2s,transform .2s}
+.answer-question-card:hover{border-color:#dddfe4;box-shadow:0 14px 38px rgba(15,18,25,.07);transform:translateY(-1px)}
+.answer-card-head h3{letter-spacing:-.025em}
+.answer-card-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#fff1f2;color:var(--red);font-weight:900;border:1px solid #ffd9dc}
+.donut-chart{width:168px;height:168px;border:10px solid #fff;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.chart-legend{gap:9px}
+.legend-item{padding:7px 8px;border-radius:9px;background:#fafafa;border:1px solid #eeeeef}
+.file-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.file-item{display:flex;align-items:center;gap:10px;min-width:0;padding:11px 12px;border:1px solid #ececef;border-radius:12px;background:#fcfcfd}
+.file-item img{width:44px;height:44px;object-fit:cover;border-radius:9px;border:1px solid #e5e5e7}
+.file-item>div{min-width:0;flex:1}
+.file-item strong,.file-item small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-item strong{font-size:10px;color:#29292d}
+.file-item small{font-size:9px;color:#8a8a91;margin-top:3px}
+.file-open{font-size:9px;font-weight:850;color:var(--red);white-space:nowrap;text-decoration:none}
+.file-open.disabled{color:#aaa}
+.individual-pagination{display:flex;justify-content:center;align-items:center;gap:14px;padding:16px 0 2px;color:#777;font-size:11px}
+.individual-pagination button{width:38px;height:38px;border:1px solid #e4e4e7;background:#fff;border-radius:10px;font-weight:900;cursor:pointer}
+.individual-pagination button:not(:disabled):hover{border-color:#e30613;color:#e30613}
+.individual-pagination button:disabled{opacity:.35;cursor:not-allowed}
+.photo-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gallery-item{border:1px solid #e6e6e9;border-radius:15px;padding:12px;background:#fff}
+.gallery-item img,.gallery-file{width:100%;height:150px;object-fit:cover;border-radius:11px;background:#f5f5f6}
+.gallery-file{display:grid;place-items:center;font-size:30px;color:#aaa}
+.gallery-item strong,.gallery-item small{display:block;margin-top:8px}
+.gallery-item small{font-size:9px;color:#888;word-break:break-word}
+.gallery-item>a{display:inline-block;margin-top:9px;font-size:10px;font-weight:850;color:var(--red);text-decoration:none}
+.dark-mode .response-count-button{background:#202024;border-color:#35353b}.dark-mode .response-count-button strong{color:#fff}.dark-mode .response-count-button span{color:#aaa}
+.dark-mode .answer-question-card{background:#1c1c20;border-color:#34343a}.dark-mode .answer-card-icon{background:#2c181a;border-color:#522124}
+.dark-mode .legend-item,.dark-mode .file-item,.dark-mode .gallery-item{background:#232328;border-color:#37373d}.dark-mode .file-item strong{color:#eee}.dark-mode .file-item small,.dark-mode .gallery-item small{color:#aaa}
+.dark-mode .individual-pagination button{background:#232328;border-color:#3a3a40;color:#eee}
+@media(max-width:760px){.file-list,.photo-gallery{grid-template-columns:1fr}.response-count-button{width:100%}.donut-chart{width:145px;height:145px}}
