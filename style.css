@@ -423,3 +423,26 @@ body.dark-mode{--black:#f5f5f5;--gray-300:#444;--gray-500:#aaa;--shadow:0 18px 5
 .local-photo-thumb{width:54px;height:48px;display:grid;place-items:center;border:1px dashed #d8a2a7!important;border-radius:8px;background:#fff1f2;color:#c9000d;font-size:18px;font-weight:900}
 .gallery-image-button.local-photo-thumb{width:100%;height:150px;font-size:38px}
 .evidence-image-button.local-photo-thumb{width:74px;height:74px;font-size:28px}
+
+
+/* Respostas — contraste no modo escuro */
+.dark-mode .answer-controls .control-search{background:#151519!important;border-color:#3a3a40!important;color:#eee!important}
+.dark-mode .answer-controls .control-search span{color:#b9b9c2!important}
+.dark-mode .answer-controls .control-search input{background:transparent!important;color:#f4f4f5!important;-webkit-text-fill-color:#f4f4f5!important;caret-color:#ff6a72!important}
+.dark-mode .answer-controls .control-search input::placeholder{color:#8f8f99!important;opacity:1}
+.dark-mode .answer-controls .control-field input,
+.dark-mode .answer-controls .control-field select{color:#f4f4f5!important;-webkit-text-fill-color:#f4f4f5!important;background:#151519!important}
+.dark-mode .answer-controls .control-field input::placeholder{color:#8f8f99!important;opacity:1}
+.dark-mode .answer-controls .control-field select option{background:#151519;color:#f4f4f5}
+.dark-mode .answer-controls .control-summary strong{color:#f4f4f5}
+.dark-mode .answer-controls .control-summary{border-top-color:#303035!important}
+
+/* Respostas — fotos locais armazenadas pelo formulário */
+.hydrated-local-photo img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block}
+.file-thumb-button.hydrated-local-photo{width:48px;height:48px;overflow:hidden;padding:0;background:#222;border-radius:8px}
+.gallery-image-button.hydrated-local-photo{width:100%;height:150px;overflow:hidden;padding:0;background:#222;border-radius:10px}
+.gallery-image-button.hydrated-local-photo img{width:100%;height:100%;object-fit:cover;border-radius:10px;display:block}
+.evidence-image-button.hydrated-local-photo{width:74px;height:74px;overflow:hidden;padding:0;background:#222;border-radius:9px}
+.evidence-image-button.hydrated-local-photo img{width:100%;height:100%;object-fit:cover;border-radius:9px;display:block}
+.local-download-link{display:inline-flex!important;align-items:center;justify-content:center;text-decoration:none!important;border:1px solid #e30613!important;border-radius:7px!important;background:#e30613!important;color:#fff!important;padding:6px 8px!important;font-size:9px!important;font-weight:850!important}
+.dark-mode .local-download-link{background:#e30613!important;border-color:#e30613!important;color:#fff!important}
