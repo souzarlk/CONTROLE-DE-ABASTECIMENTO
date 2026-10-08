@@ -60,34 +60,116 @@
 </section>
 
 <section id="answersView" class="view hidden">
-<div class="answers-head">
-  <div><span class="eyebrow red">RASTREABILIDADE</span><h2>Respostas</h2><p>Todos os abastecimentos registrados, organizados para consulta rápida, conferência e acompanhamento operacional.</p></div>
-  <div class="answers-head-actions"><button id="refreshAnswers" class="secondary-btn">↻ Atualizar</button><button id="exportAnswersBtn" class="primary-btn">↓ Exportar CSV</button></div>
-</div>
-
-<div class="answers-kpis">
-  <div class="answer-kpi"><span class="kpi-icon">#</span><div><small>REGISTROS</small><strong id="answerTotal">0</strong><em>respostas encontradas</em></div></div>
-  <div class="answer-kpi"><span class="kpi-icon">L</span><div><small>LITROS</small><strong id="answerLiters">0 L</strong><em>volume total abastecido</em></div></div>
-  <div class="answer-kpi"><span class="kpi-icon">▣</span><div><small>VEÍCULOS</small><strong id="answerVehicles">0</strong><em>placas distintas</em></div></div>
-  <div class="answer-kpi alert"><span class="kpi-icon">!</span><div><small>CONFERÊNCIA</small><strong id="answerAlerts">0</strong><em>registros para verificar</em></div></div>
-</div>
-
-<div class="answers-filter panel">
-  <div class="answers-filter-top"><div><strong>Pesquisar respostas</strong><small>Filtre por qualquer informação da resposta.</small></div><button id="clearAnswerFilters" class="filter-clear">Limpar filtros</button></div>
-  <div class="answers-filters-grid">
-    <label class="answer-filter search-filter"><span>Pesquisa geral</span><input id="answerSearch" type="search" placeholder="Funcionário, placa, data, litros..."></label>
-    <label class="answer-filter"><span>Data inicial</span><input id="answerDateFrom" type="date"></label>
-    <label class="answer-filter"><span>Data final</span><input id="answerDateTo" type="date"></label>
-    <label class="answer-filter"><span>Funcionário</span><select id="answerEmployee"><option value="">Todos os funcionários</option></select></label>
-    <label class="answer-filter"><span>Placa</span><select id="answerPlate"><option value="">Todos os veículos</option></select></label>
-    <label class="answer-filter"><span>Antifurto</span><select id="answerAnti"><option value="">Todos</option><option>Sim - ok</option><option>Sim - Apresenta danos</option><option>Não</option></select></label>
+<div class="answers-google-shell">
+  <div class="answers-title-row">
+    <div>
+      <span class="eyebrow red">RASTREABILIDADE OPERACIONAL</span>
+      <h2>Respostas</h2>
+      <p>Resumo completo das respostas do controle de abastecimento, seguindo a estrutura do formulário original.</p>
+    </div>
+    <div class="answers-title-actions">
+      <button id="refreshAnswers" class="secondary-btn">↻ Atualizar</button>
+      <button id="exportAnswersBtn" class="primary-btn">↓ Exportar CSV</button>
+    </div>
   </div>
-  <div class="answer-filter-summary"><span id="answerFilterSummary">Exibindo todos os registros</span><span id="answerLastUpdate">Base histórica + registros locais</span></div>
-</div>
 
-<div class="answers-table-panel panel">
-  <div class="answers-table-head"><div><strong>Histórico de abastecimentos</strong><small>Selecione uma linha para abrir todos os detalhes do abastecimento.</small></div><span class="table-limit">Até 500 resultados por consulta</span></div>
-  <div class="answers-table-wrap"><table class="answers-table"><thead><tr><th>#</th><th>Data</th><th>Hora</th><th>Funcionário</th><th>Placa</th><th>Litros</th><th>Hodômetro</th><th>Antifurto</th><th>Tanques</th><th>Evidências</th></tr></thead><tbody id="answersBody"></tbody></table></div>
+  <div class="answers-response-bar panel">
+    <div class="response-count"><strong id="answerTotal">0</strong><span>respostas</span></div>
+    <div class="response-tabs">
+      <button class="response-tab active" data-answer-tab="summary">Resumo</button>
+      <button class="response-tab" data-answer-tab="question">Pergunta</button>
+      <button class="response-tab" data-answer-tab="individual">Individual</button>
+    </div>
+    <div class="response-actions">
+      <span class="response-source">● BASE COSTALOG</span>
+      <button id="clearAnswerFilters" class="filter-clear">Limpar filtros</button>
+    </div>
+  </div>
+
+  <div id="answerSummaryTab" class="answer-tab-panel">
+    <div class="answer-controls panel">
+      <div class="control-search"><span>⌕</span><input id="answerSearch" type="search" placeholder="Pesquisar funcionário, placa, data, horário, litros..."></div>
+      <div class="control-field"><label>Data inicial</label><input id="answerDateFrom" type="date"></div>
+      <div class="control-field"><label>Data final</label><input id="answerDateTo" type="date"></div>
+      <div class="control-field"><label>Funcionário</label><select id="answerEmployee"><option value="">Todos</option></select></div>
+      <div class="control-field"><label>Placa</label><select id="answerPlate"><option value="">Todas</option></select></div>
+      <div class="control-field"><label>Antifurto</label><select id="answerAnti"><option value="">Todos</option><option>Sim - ok</option><option>Sim - Apresenta danos</option><option>Não</option></select></div>
+      <div class="control-summary"><strong id="answerFilterSummary">0 registros</strong><span id="answerLastUpdate">Base histórica + registros locais</span></div>
+    </div>
+
+    <div class="answers-card-grid">
+      <article class="answer-question-card answer-wide" id="dateQuestionCard">
+        <div class="answer-card-head"><div><h3>DATA</h3><span id="dateQuestionMeta">0 respostas</span></div><span class="answer-card-icon">▦</span></div>
+        <div id="dateHeatmap" class="date-heatmap"></div>
+      </article>
+
+      <article class="answer-question-card answer-wide" id="timeQuestionCard">
+        <div class="answer-card-head"><div><h3>HORA</h3><span id="timeQuestionMeta">0 respostas</span></div><span class="answer-card-icon">◷</span></div>
+        <div id="timeDistribution" class="time-distribution"></div>
+      </article>
+
+      <article class="answer-question-card" id="employeeQuestionCard">
+        <div class="answer-card-head"><div><h3>FUNCIONÁRIO</h3><span id="employeeQuestionMeta">0 respostas</span></div><button class="copy-chart" type="button" data-copy-chart="employee">⧉ Copiar gráfico</button></div>
+        <div class="chart-layout"><div id="employeePie" class="donut-chart"></div><div id="employeeLegend" class="chart-legend"></div></div>
+      </article>
+
+      <article class="answer-question-card" id="plateQuestionCard">
+        <div class="answer-card-head"><div><h3>Placa</h3><span id="plateQuestionMeta">0 respostas</span></div></div>
+        <div id="plateList" class="answer-list"></div>
+        <button id="plateMore" class="list-more" type="button"></button>
+      </article>
+
+      <article class="answer-question-card answer-wide" id="photoPlateQuestionCard">
+        <div class="answer-card-head"><div><h3>Foto - Placa</h3><span id="photoPlateQuestionMeta">0 respostas</span></div><span class="drive-link">◈ Ver pasta</span></div>
+        <div id="photoPlateList" class="file-list"></div><button id="photoPlateMore" class="list-more" type="button"></button>
+      </article>
+
+      <article class="answer-question-card" id="odoQuestionCard">
+        <div class="answer-card-head"><div><h3>Hodômetro</h3><span id="odoQuestionMeta">0 respostas</span></div></div>
+        <div id="odoList" class="answer-list"></div>
+      </article>
+
+      <article class="answer-question-card answer-wide" id="photoOdoQuestionCard">
+        <div class="answer-card-head"><div><h3>Foto - Hodômetro</h3><span id="photoOdoQuestionMeta">0 respostas</span></div><span class="drive-link">◈ Ver pasta</span></div>
+        <div id="photoOdoList" class="file-list"></div><button id="photoOdoMore" class="list-more" type="button"></button>
+      </article>
+
+      <article class="answer-question-card" id="litersQuestionCard">
+        <div class="answer-card-head"><div><h3>Qtd - Litros</h3><span id="litersQuestionMeta">0 respostas</span></div></div>
+        <div id="litersList" class="answer-list"></div>
+      </article>
+
+      <article class="answer-question-card answer-wide" id="photoPumpQuestionCard">
+        <div class="answer-card-head"><div><h3>Foto - bomba</h3><span id="photoPumpQuestionMeta">0 respostas</span></div><span class="drive-link">◈ Ver pasta</span></div>
+        <div id="photoPumpList" class="file-list"></div><button id="photoPumpMore" class="list-more" type="button"></button>
+      </article>
+
+      <article class="answer-question-card" id="antiQuestionCard">
+        <div class="answer-card-head"><div><h3>Possui Antifurto?</h3><span id="antiQuestionMeta">0 respostas</span></div><button class="copy-chart" type="button" data-copy-chart="anti">⧉ Copiar gráfico</button></div>
+        <div class="chart-layout"><div id="antiPie" class="donut-chart"></div><div id="antiLegend" class="chart-legend"></div></div>
+      </article>
+
+      <article class="answer-question-card" id="tankQuestionCard">
+        <div class="answer-card-head"><div><h3>Quantos tanque o veículo possui?</h3><span id="tankQuestionMeta">0 respostas</span></div><button class="copy-chart" type="button" data-copy-chart="tank">⧉ Copiar gráfico</button></div>
+        <div class="chart-layout"><div id="tankPie" class="donut-chart"></div><div id="tankLegend" class="chart-legend"></div></div>
+      </article>
+    </div>
+  </div>
+
+  <div id="answerQuestionTab" class="answer-tab-panel hidden">
+    <div class="question-answer-panel panel">
+      <div class="question-answer-head"><span class="eyebrow red">PERGUNTAS DO FORMULÁRIO</span><h3>Distribuição por pergunta</h3><p>Selecione uma pergunta para consultar suas respostas de forma organizada.</p></div>
+      <div id="questionSelector" class="question-selector"></div>
+      <div id="questionAnswerContent" class="question-answer-content"></div>
+    </div>
+  </div>
+
+  <div id="answerIndividualTab" class="answer-tab-panel hidden">
+    <div class="individual-panel panel">
+      <div class="individual-head"><div><span class="eyebrow red">REGISTROS INDIVIDUAIS</span><h3>Respostas por abastecimento</h3><p>Clique em um registro para abrir todas as informações e evidências.</p></div><strong id="individualCount">0 registros</strong></div>
+      <div class="answers-table-wrap"><table class="answers-table"><thead><tr><th>#</th><th>Data</th><th>Hora</th><th>Funcionário</th><th>Placa</th><th>Hodômetro</th><th>Litros</th><th>Antifurto</th><th>Tanques</th><th>Evidências</th></tr></thead><tbody id="answersBody"></tbody></table></div>
+    </div>
+  </div>
 </div>
 </section>
 
