@@ -1,6 +1,7 @@
 const DATA_URL='CONTROLE%20DE%20ABASTECIMENTO%20-%20POSTO%20COSTALOG%20-%20INTERNO%20-%2028042025.csv.zip';
 const PASS={admin:'6414b877f3b53d65c4a4596d3eed8b6b7532e971a1b8bc3a05024f53dafcbef8',user:'b8fa4b66429e97aaf969dd5aca1d931b38f341911bd33c5ee91f492da4ae235e'};
 let allRows=[],filteredRows=[],currentPage=1,pageSize=20;
+let notificationItems=[],notificationSeenIds=new Set(),liveRefreshTimer=null;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function num(v){v=String(v??'').trim();if(!v)return 0;if(v.includes(','))return parseFloat(v.replace(/\./g,'').replace(',','.'))||0;return parseFloat(v)||0}
@@ -26,7 +27,7 @@ function fmt(n,d=0){return new Intl.NumberFormat('pt-BR',{maximumFractionDigits:
 function br(d){if(!d)return'—';let p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
 function dt(o){return br(o.date)+' '+(o.time||'')}
 async function sha(s){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('')}
-async function load(){try{const r=await fetch(DATA_URL+'?v=20261007',{cache:'no-store'});if(!r.ok)throw Error('Arquivo ZIP não encontrado ('+r.status+')');const zip=await JSZip.loadAsync(await r.arrayBuffer());const files=Object.keys(zip.files).filter(k=>/\.csv$/i.test(k)&&!zip.files[k].dir);if(!files.length)throw Error('CSV não encontrado no ZIP');const textCsv=await zip.files[files[0]].async('string');allRows=normalize(csv(textCsv));const local=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');allRows.push(...local.map((x,i)=>({...x,id:x.id||('local-'+i),plate:String(x.plate||x.Placa||'').toUpperCase().replace(/[ -]/g,'')})));renderAll();if(typeof populateQuestionOptions==='function')populateQuestionOptions();$('loading').classList.add('hidden')}catch(err){console.error('Erro ao carregar base:',err);$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>'+esc(err.message)+'</span><button class="secondary-btn" onclick="location.reload()">Tentar novamente</button>'}}
+async function load(){try{const r=await fetch(DATA_URL+'?v=20261007',{cache:'no-store'});if(!r.ok)throw Error('Arquivo ZIP não encontrado ('+r.status+')');const zip=await JSZip.loadAsync(await r.arrayBuffer());const files=Object.keys(zip.files).filter(k=>/\.csv$/i.test(k)&&!zip.files[k].dir);if(!files.length)throw Error('CSV não encontrado no ZIP');const textCsv=await zip.files[files[0]].async('string');allRows=normalize(csv(textCsv));const local=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');allRows.push(...local.map((x,i)=>({...x,id:x.id||('local-'+i),plate:String(x.plate||x.Placa||'').toUpperCase().replace(/[ -]/g,'')})));renderAll();if(typeof populateQuestionOptions==='function')populateQuestionOptions();$('loading').classList.add('hidden');initializeLiveResponses();const savedView=sessionStorage.getItem('costalogCurrentView')||'questions';view(savedView)}catch(err){console.error('Erro ao carregar base:',err);$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>'+esc(err.message)+'</span><button class="secondary-btn" onclick="location.reload()">Tentar novamente</button>'}}
 function renderAll(){renderSettings();renderQuestions()}
 function stats(){let ls=allRows.reduce((a,r)=>a+r.liters,0),od=allRows.filter(r=>r.odo).map(r=>r.odo),dates=[...allRows].sort((a,b)=>a.date.localeCompare(b.date)),last=[...allRows].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time))[0];$('statRecords').textContent=fmt(allRows.length);$('statLiters').textContent=fmt(ls,0)+' L';$('statVehicles').textContent=fmt(new Set(allRows.map(r=>r.plate)).size);$('statOdo').textContent=fmt(od.reduce((a,b)=>a+b,0)/(od.length||1),0)+' km';$('statLast').textContent=last?br(last.date):'—';$('periodLabel').textContent=dates.length?br(dates[0].date)+' — '+br(last.date):'—'}
 function chart(){let m={};allRows.forEach(r=>{let k=r.date.slice(0,7);if(k)m[k]=(m[k]||0)+r.liters});let ks=Object.keys(m).sort().slice(-12),mx=Math.max(...ks.map(k=>m[k]),1);$('monthChart').innerHTML=ks.map(k=>{let [y,n]=k.split('-');let lab=new Date(+y,+n-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','');return '<div class="bar-item"><b>'+fmt(m[k],0)+' L</b><i style="height:'+Math.max(8,m[k]/mx*145)+'px"></i><small>'+lab+'</small></div>'}).join('')}
@@ -39,6 +40,7 @@ function history(){let s=(currentPage-1)*pageSize,a=filteredRows.slice(s,s+pageS
 function vehicles(){let q=($('vehicleSearch')?.value||'').toUpperCase(),m={};allRows.forEach(r=>{if(q&&!r.plate.includes(q))return;m[r.plate]??={n:0,l:0,odo:0,last:r};m[r.plate].n++;m[r.plate].l+=r.liters;m[r.plate].odo=Math.max(m[r.plate].odo,r.odo);if((r.date+r.time)>(m[r.plate].last.date+m[r.plate].last.time))m[r.plate].last=r});$('vehicleGrid').innerHTML=Object.entries(m).sort((a,b)=>b[1].l-a[1].l).slice(0,120).map(([p,v])=>'<article class="vehicle-card"><div class="vehicle-head"><span class="plate-chip">'+esc(p)+'</span><span>'+fmt(v.n)+' abastecimentos</span></div><strong>'+fmt(v.l,0)+' L</strong><div class="vehicle-meta"><span>Último: '+br(v.last.date)+'</span><span>Hod.: '+fmt(v.odo)+' km</span></div></article>').join('')}
 function view(v){
  if(v==='answers'&&!isAdmin())v='questions';
+ sessionStorage.setItem('costalogCurrentView',v);
  const target=$(v+'View');if(!target)return;
  document.querySelectorAll('.view').forEach(x=>{x.classList.add('hidden');x.style.display='none'});
  target.classList.remove('hidden');target.style.display='';
@@ -156,7 +158,8 @@ async function save(e){
    verificationStatus('success','Tudo certo com o seu registro');
    await new Promise(r=>setTimeout(r,1200));
    modal(false);
-   try{renderAll();view('answers')}catch(renderError){console.error('Registro salvo; erro ao atualizar a visualização:',renderError)}
+   if(!isAdmin())showReceipt(o);
+   try{renderAll();view(isAdmin()?'answers':'questions');renderSettings()}catch(renderError){console.error('Registro salvo; erro ao atualizar a visualização:',renderError)}
  }catch(err){
    console.error('Erro ao registrar abastecimento:',err);
    verificationStatus('error','Não foi possível concluir o registro');
@@ -489,6 +492,42 @@ function exportAnswers(){
  const blob=new Blob(['\ufeff'+csvRows],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='respostas-abastecimento-costalog.csv';a.click();URL.revokeObjectURL(a.href);
 }
 function renderAnswers(){if(!$('answerSummaryTab'))return;renderAnswerSummary();renderIndividual();renderQuestionTab()}
+function showReceipt(r){
+ const modalEl=$('receiptModal'),body=$('receiptBody');if(!modalEl||!body)return;
+ $('receiptTitle').textContent='Registro realizado com sucesso';
+ $('receiptSubtitle').textContent='Confira abaixo os dados que foram salvos. Este comprovante é somente para visualização.';
+ const photo=(data,label)=>data?'<div class="receipt-photo"><img src="'+esc(data)+'" alt="'+esc(label)+'"><span>'+esc(label)+'</span></div>':'<div class="receipt-photo receipt-photo-empty"><span>—</span><small>'+esc(label)+' não anexada</small></div>';
+ body.innerHTML='<div class="receipt-success"><span>✓</span><div><strong>Abastecimento salvo com sucesso</strong><small>Seu registro foi confirmado pelo sistema e não pode ser editado neste comprovante.</small></div></div><div class="receipt-grid"><div><small>DATA</small><strong>'+br(r.date)+'</strong></div><div><small>HORA</small><strong>'+esc(r.time||'—')+'</strong></div><div><small>FUNCIONÁRIO</small><strong>'+esc(r.employee||'—')+'</strong></div><div><small>PLACA</small><strong class="plate-chip">'+esc(r.plate||'—')+'</strong></div><div><small>HODÔMETRO</small><strong>'+fmt(r.odo)+' km</strong></div><div><small>QTD. — LITROS</small><strong>'+fmt(r.liters,2)+' L</strong></div><div><small>POSSUI ANTIFURTO?</small><strong>'+esc(r['Possuí Antifurto?']||'—')+'</strong></div><div><small>QUANTOS TANQUES</small><strong>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</strong></div></div><div class="receipt-evidence"><div class="receipt-section-title"><strong>Evidências anexadas</strong><span>'+fmt(r.photoCount||0)+' foto(s)</span></div><div class="receipt-photos">'+photo(r.photoPlateData,'Foto da placa')+photo(r.photoOdoData,'Foto do hodômetro')+photo(r.photoPumpData,'Foto da bomba')+'</div></div>';
+ modalEl.classList.remove('hidden');
+}
+function closeReceipt(){$('receiptModal')?.classList.add('hidden')}
+function notificationToast(employee){
+ const toast=$('notificationToast');if(!toast)return;
+ toast.innerHTML='<span class="notification-toast-icon">✓</span><div><strong>Novo abastecimento registrado</strong><span>Funcionário: '+esc(employee||'Não informado')+'</span></div><button type="button" data-notification-close>×</button>';
+ toast.classList.remove('hidden');clearTimeout(window.__costalogToastTimer);window.__costalogToastTimer=setTimeout(()=>toast.classList.add('hidden'),7000);
+}
+function renderNotifications(){
+ const count=$('notificationCount'),list=$('notificationList');if(count){count.textContent=fmt(notificationItems.length);count.classList.toggle('hidden',notificationItems.length===0)}if(!list)return;
+ list.innerHTML=notificationItems.length?notificationItems.slice(0,20).map(n=>'<div class="notification-item"><strong>Novo abastecimento</strong><span>Funcionário: '+esc(n.employee||'Não informado')+'</span><small>'+esc(dt(n))+' • '+esc(n.plate||'—')+'</small></div>').join(''):'<div class="notification-empty">Nenhuma nova notificação.</div>';
+}
+function initializeLiveResponses(){
+ if(!isAdmin())return;let local=[];try{local=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]')}catch(e){}
+ notificationSeenIds=new Set(local.map(r=>String(r.id||'')));renderNotifications();if(liveRefreshTimer)clearInterval(liveRefreshTimer);liveRefreshTimer=setInterval(checkLiveResponses,2500);
+}
+function checkLiveResponses(){
+ let local=[];try{local=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]')}catch(e){return}
+ const fresh=local.filter(r=>{const id=String(r.id||'');return id.startsWith('local-')&&!notificationSeenIds.has(id)});
+ if(fresh.length&&isAdmin()){
+   fresh.forEach(r=>{notificationSeenIds.add(String(r.id));notificationItems.unshift({...r,id:String(r.id)});if(!allRows.some(x=>String(x.id)===String(r.id)))allRows.push({...r,id:String(r.id)});notificationToast(r.employee)});
+   renderNotifications();renderAnswers();
+ }else local.forEach(r=>notificationSeenIds.add(String(r.id||'')));
+ const localById=new Map(local.map(r=>[String(r.id),r]));allRows=allRows.map(r=>localById.get(String(r.id))||r);
+}
+function setupLiveNotificationEvents(){
+ window.addEventListener('storage',e=>{if(e.key==='costalogAbastecimentos'&&isAdmin())checkLiveResponses()});
+ document.addEventListener('click',e=>{const close=e.target.closest('[data-notification-close]');if(close){$('notificationToast')?.classList.add('hidden');return}if(e.target.closest('#notificationBtn')){$('notificationPanel')?.classList.toggle('hidden');return}if(e.target.closest('#clearNotifications')){notificationItems=[];renderNotifications();return}});
+}
+
 function setupExtraPages(){
  ['answerSearch','answerDateFrom','answerDateTo','answerEmployee','answerPlate','answerAnti'].forEach(id=>{const el=$(id);el?.addEventListener('input',renderAnswers);el?.addEventListener('change',renderAnswers)});
  $('refreshAnswers')?.addEventListener('click',renderAnswers);$('exportAnswersBtn')?.addEventListener('click',exportAnswers);
@@ -501,7 +540,26 @@ function setupExtraPages(){
 }
 function isAdmin(){return sessionStorage.getItem('costalogRole')==='admin'}
 function applyRoleUI(){const admin=isAdmin();document.querySelectorAll('.role-badge').forEach(x=>{x.textContent=admin?'ADMINISTRADOR':'USUÁRIO';x.classList.toggle('admin',admin)});document.querySelectorAll('.admin-delete-btn').forEach(x=>x.classList.toggle('hidden',!admin));document.querySelectorAll('.admin-only-nav').forEach(x=>x.classList.toggle('hidden',!admin));if(!admin&&$('answersView')&&!$('answersView').classList.contains('hidden'))view('questions')}
-function deleteAnswer(id){if(!isAdmin()){alert('Apenas administradores podem excluir respostas.');return}const row=allRows.find(r=>String(r.id)===String(id));if(!row)return;if(!String(id).startsWith('local-')){alert('Este registro pertence à base histórica e não pode ser excluído pelo portal.');return}if(!confirm('Excluir definitivamente esta resposta e as fotos anexadas?'))return;const arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');const target=String(id);const kept=arr.filter(r=>String(r.id||'')!==target&&String(r.localId||'')!==target);localStorage.setItem('costalogAbastecimentos',JSON.stringify(kept));['plate','odo','pump'].forEach(async k=>{try{const db=await openPhotoDB();const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(target+':'+k);tx.oncomplete=()=>db.close();tx.onerror=()=>db.close()}catch(e){console.warn('Falha ao remover foto local',e)}});allRows=allRows.filter(r=>String(r.id)!==target);renderAnswers();applyRoleUI();if($('answerDetailModal'))$('answerDetailModal').classList.add('hidden')}
+function deleteAnswer(id){
+ if(!isAdmin()){alert('Apenas administradores podem excluir respostas.');return}
+ const target=String(id||''),row=allRows.find(r=>String(r.id)===target);
+ if(!row)return;
+ if(!target.startsWith('local-')){alert('Este registro pertence à base histórica e não pode ser excluído pelo portal.');return}
+ if(!confirm('Excluir definitivamente esta resposta e as fotos anexadas?'))return;
+ try{
+   const arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
+   const kept=arr.filter(r=>String(r.id||r.localId||'')!==target&&String(r.localId||'')!==target);
+   localStorage.setItem('costalogAbastecimentos',JSON.stringify(kept));
+   ['plate','odo','pump'].forEach(k=>{
+     localStorage.removeItem('costalogPhotoBackup:'+target+':'+k);
+     try{openPhotoDB().then(db=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(target+':'+k);tx.oncomplete=()=>db.close();tx.onerror=()=>db.close()}).catch(()=>{})}catch(e){}
+   });
+   allRows=allRows.filter(r=>String(r.id)!==target);
+   notificationItems=notificationItems.filter(n=>n.id!==target);
+   renderAnswers();applyRoleUI();
+   if($('answerDetailModal'))$('answerDetailModal').classList.add('hidden');
+ }catch(err){console.error('Falha ao excluir resposta:',err);alert('Não foi possível excluir a resposta.')}
+}
 function renderSettings(){const r=$('settingsRecords');if(r)r.textContent=fmt(allRows.length);const d=$('settingDark');if(d)d.checked=document.body.classList.contains('dark-mode');const a=$('settingAuto');if(a)a.checked=localStorage.getItem('costalogAutoRefresh')!=='0';const an=$('settingAnti');if(an)an.checked=localStorage.getItem('costalogAlertAnti')!=='0';const vo=$('settingVolume');if(vo)vo.checked=localStorage.getItem('costalogAlertVolume')!=='0'}
 const originalView=view;view=function(v){originalView(v)};
-setupExtraPages();applyRoleUI();
+setupExtraPages();applyRoleUI();setupLiveNotificationEvents();
