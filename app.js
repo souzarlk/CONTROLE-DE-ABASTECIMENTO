@@ -296,7 +296,9 @@ async function saveLocalPhoto(key,file){
  }finally{db.close()}
 }
 async function getLocalPhoto(key){
- try{const db=await openPhotoDB();const value=await new Promise((res,rej)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(key);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});db.close();return value||null}catch(e){console.warn('Foto local não encontrada:',e);return null}
+ try{const db=await openPhotoDB();const value=await new Promise((res,rej)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(key);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});db.close();if(value?.blob)return value}catch(e){console.warn('IndexedDB indisponível:',e)}
+ try{const backup=JSON.parse(localStorage.getItem('costalogPhotoBackup:'+key)||'null');if(backup?.dataUrl)return {dataUrl:backup.dataUrl,name:backup.name||'foto.jpg',size:backup.size||0,type:'image/jpeg'};}catch(e){console.warn('Backup local indisponível:',e)}
+ return null;
 }
 function extractDriveId(v){
  const s=String(v||'').trim();
@@ -329,9 +331,9 @@ function isImageValue(v){return photoSource(v).kind!=='none'&&photoSource(v).kin
 async function downloadLocalPhoto(value,title){
  const rec=await getLocalPhoto(String(value||'').slice(10));
  if(!rec?.blob){alert('A foto não está disponível neste navegador. O registro não será tratado como salvo até que a foto seja armazenada corretamente.');return false}
- const url=URL.createObjectURL(rec.blob);
+ const url=rec.dataUrl||URL.createObjectURL(rec.blob);
  const a=document.createElement('a');a.href=url;a.download=rec.name||((title||'foto-abastecimento').toLowerCase().replace(/[^a-z0-9]+/gi,'-')+'.jpg');document.body.appendChild(a);a.click();a.remove();
- setTimeout(()=>URL.revokeObjectURL(url),10000);
+ if(url.startsWith('blob:'))setTimeout(()=>URL.revokeObjectURL(url),10000);
  return true;
 }
 async function openPhotoViewer(value,title){
@@ -339,8 +341,8 @@ async function openPhotoViewer(value,title){
  let src='',downloadUrl='',local=false;
  if(source.kind==='local'){
    const rec=await getLocalPhoto(String(value).slice(10));
-   if(!rec?.blob){alert('A foto anexada não foi encontrada no armazenamento deste navegador.');return}
-   src=URL.createObjectURL(rec.blob);downloadUrl=src;local=true;
+   if(!rec){alert('Não foi possível recuperar a foto salva neste navegador. O registro permanece preservado, mas esta cópia local foi perdida.');return}
+   src=rec.dataUrl||URL.createObjectURL(rec.blob);downloadUrl=src;local=true;
  }else{
    src=source.view;downloadUrl=source.download||source.view;
  }
