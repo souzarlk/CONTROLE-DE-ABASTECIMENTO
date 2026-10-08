@@ -35,6 +35,13 @@ if(sessionStorage.getItem('costalogAuth')){$('loginScreen').classList.add('hidde
 
 
 /* Páginas complementares: Perguntas, Respostas e Configurações */
+function populateQuestionOptions(){
+ const employees=[...new Set(allRows.map(r=>String(r.employee||r['FUNCIONÁRIO']||'').trim()).filter(Boolean))].sort();
+ const plates=[...new Set(allRows.map(r=>String(r.plate||r['Placa']||'').trim().toUpperCase().replace(/[ -]/g,'')).filter(Boolean))].sort();
+ const ed=$('employeeOptions'),pd=$('plateOptions');
+ if(ed)ed.innerHTML=employees.map(x=>'<option value="'+esc(x)+'"></option>').join('');
+ if(pd)pd.innerHTML=plates.map(x=>'<option value="'+esc(x)+'"></option>').join('');
+}
 function renderQuestions(){const b=$('questionsNewBtn');if(b)b.onclick=()=>modal(true)}
 function filteredAnswerRows(){
  const q=($('answerSearch')?.value||'').trim().toUpperCase(),from=$('answerDateFrom')?.value||'',to=$('answerDateTo')?.value||'',emp=$('answerEmployee')?.value||'',plate=$('answerPlate')?.value||'',anti=$('answerAnti')?.value||'';
