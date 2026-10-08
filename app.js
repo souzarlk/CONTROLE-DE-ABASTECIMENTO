@@ -38,13 +38,109 @@ function apply(){let q=$('searchInput').value.trim().toUpperCase(),e=$('employee
 function history(){let s=(currentPage-1)*pageSize,a=filteredRows.slice(s,s+pageSize);$('historyBody').innerHTML=a.length?a.map(r=>'<tr><td>'+dt(r)+'</td><td><strong>'+esc(r.employee)+'</strong></td><td><span class="plate-chip">'+esc(r.plate)+'</span></td><td>'+fmt(r.odo)+' km</td><td><strong>'+fmt(r.liters,2)+' L</strong></td><td><span class="status-dot '+(/Sim - ok/i.test(r['Possuí Antifurto?'])?'ok':'warn')+'">'+esc(r['Possuí Antifurto?']||'—')+'</span></td><td>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</td></tr>').join(''):'<tr><td colspan="7" class="no-results">Nenhum registro encontrado.</td></tr>';let p=Math.max(1,Math.ceil(filteredRows.length/pageSize));$('filterSummary').textContent=fmt(filteredRows.length)+' registros encontrados';$('pagination').innerHTML='<button '+(currentPage===1?'disabled':'')+' data-page="'+(currentPage-1)+'">‹</button><span>Página '+currentPage+' de '+p+'</span><button '+(currentPage===p?'disabled':'')+' data-page="'+(currentPage+1)+'">›</button>'}
 function vehicles(){let q=($('vehicleSearch')?.value||'').toUpperCase(),m={};allRows.forEach(r=>{if(q&&!r.plate.includes(q))return;m[r.plate]??={n:0,l:0,odo:0,last:r};m[r.plate].n++;m[r.plate].l+=r.liters;m[r.plate].odo=Math.max(m[r.plate].odo,r.odo);if((r.date+r.time)>(m[r.plate].last.date+m[r.plate].last.time))m[r.plate].last=r});$('vehicleGrid').innerHTML=Object.entries(m).sort((a,b)=>b[1].l-a[1].l).slice(0,120).map(([p,v])=>'<article class="vehicle-card"><div class="vehicle-head"><span class="plate-chip">'+esc(p)+'</span><span>'+fmt(v.n)+' abastecimentos</span></div><strong>'+fmt(v.l,0)+' L</strong><div class="vehicle-meta"><span>Último: '+br(v.last.date)+'</span><span>Hod.: '+fmt(v.odo)+' km</span></div></article>').join('')}
 function view(v){document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));const target=$(v+'View');if(!target)return;target.classList.remove('hidden');document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('active',x.dataset.view===v));if(v==='settings')renderSettings();if(v==='questions')renderQuestions();scrollTo({top:0,behavior:'smooth'})}
-function modal(open){$('entryModal').classList.toggle('hidden',!open);if(open){let d=new Date();$('entryForm').reset();$('entryDate').value=d.toISOString().slice(0,10);$('entryTime').value=d.toTimeString().slice(0,5);if(typeof populateQuestionOptions==='function')populateQuestionOptions();updatePlateAutomation();updateOdoAutomation();updateLitersAutomation();['photoPlatePreview','photoOdoPreview','photoPumpPreview'].forEach(id=>{if($(id))$(id).innerHTML=''})}}
-function save(e){e.preventDefault();const plate=($('entryPlate').value||'').toUpperCase().replace(/[ -]/g,'');$('entryPlate').value=plate;const employee=$('entryEmployee').value.trim().toUpperCase(),odo=+($('entryOdo').value||0),liters=+($('entryLiters').value||0),anti=$('entryAnti').value,tanks=$('entryTanks').value;if(!plate||plate.length<6||!employee||!$('entryDate').value||!odo||!liters||!anti||!tanks){showEntryValidation('Preencha todos os campos obrigatórios marcados com *.','error');return}const last=lastForPlate(plate);if(last&&odo<last.odo){showEntryValidation('O hodômetro não pode ser menor que o último registro desta placa ('+fmt(last.odo)+' km).','error');return}const o={'DATA':$('entryDate').value,'HORA':$('entryTime').value,'FUNCIONÁRIO':employee,'Placa':plate,'Qtd - Litros':String(liters),'Hodômetro':String(odo),'Possuí Antifurto?':anti,'Quantos tanque o veículo possui?':tanks,employee,plate,odo,liters,date:$('entryDate').value,time:$('entryTime').value,photoPlate:$('entryPhotoPlate').files?.[0]?.name||'',photoOdo:$('entryPhotoOdo').files?.[0]?.name||'',photoPump:$('entryPhotoPump').files?.[0]?.name||'',photoCount:[$('entryPhotoPlate').files?.[0],$('entryPhotoOdo').files?.[0],$('entryPhotoPump').files?.[0]].filter(Boolean).length};let arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');arr.push(o);localStorage.setItem('costalogAbastecimentos',JSON.stringify(arr));allRows.push({...o,id:'local-'+Date.now()});modal(false);renderAll();view('answers');alert('Abastecimento registrado com sucesso neste navegador.')}
+function modal(open){if(!open)verificationReset();$('entryModal').classList.toggle('hidden',!open);if(open){verificationReset();let d=new Date();$('entryForm').reset();$('entryDate').value=d.toISOString().slice(0,10);$('entryTime').value=d.toTimeString().slice(0,5);if(typeof populateQuestionOptions==='function')populateQuestionOptions();updatePlateAutomation();updateOdoAutomation();updateLitersAutomation();['photoPlatePreview','photoOdoPreview','photoPumpPreview'].forEach(id=>{if($(id))$(id).innerHTML=''})}}
+function verificationReset(){
+ const box=$('entryVerification'),bar=$('verificationBar'),icon=$('verificationIcon'),txt=$('verificationText');
+ if(box)box.className='entry-verification hidden';
+ if(bar)bar.style.width='0%';
+ if(icon)icon.textContent='◌';
+ if(txt)txt.textContent='Verificando seu registro...';
+}
+function verificationStatus(type,text){
+ const box=$('entryVerification'),bar=$('verificationBar'),icon=$('verificationIcon'),txt=$('verificationText');
+ if(!box)return;
+ box.className='entry-verification '+type;
+ if(bar)bar.style.width=type==='success'||type==='error'?'100%':'8%';
+ if(icon)icon.textContent=type==='success'?'✓':type==='error'?'!':'◌';
+ if(txt)txt.textContent=text;
+}
+function verificationProgress(value,text){
+ const box=$('entryVerification'),bar=$('verificationBar'),txt=$('verificationText');
+ if(box)box.className='entry-verification checking';
+ if(bar)bar.style.width=Math.max(0,Math.min(100,value))+'%';
+ if(txt)txt.textContent=text;
+}
+function photoPreview(inputId,previewId){
+ const input=$(inputId),preview=$(previewId);if(!input||!preview)return;
+ input.addEventListener('change',()=>{
+   const file=input.files&&input.files[0];
+   if(!file){preview.innerHTML='';return}
+   if(!file.type.startsWith('image/')){preview.innerHTML='<span class="photo-error">Arquivo inválido. Selecione uma imagem.</span>';input.value='';return}
+   const url=URL.createObjectURL(file);
+   preview.innerHTML='<div class="photo-attached"><img src="'+url+'" alt="Prévia da foto"><div class="photo-attached-info"><strong>✓ Foto anexada</strong><span>'+esc(file.name)+'</span><small>'+fmt(Math.max(1,Math.round(file.size/1024)))+' KB</small></div><button type="button" class="photo-remove" aria-label="Remover foto">×</button></div>';
+   const remove=preview.querySelector('.photo-remove');
+   if(remove)remove.onclick=()=>{URL.revokeObjectURL(url);input.value='';preview.innerHTML='';};
+ });
+}
+function setupPhotoInputs(){
+ photoPreview('entryPhotoPlate','photoPlatePreview');
+ photoPreview('entryPhotoOdo','photoOdoPreview');
+ photoPreview('entryPhotoPump','photoPumpPreview');
+ document.querySelectorAll('[data-photo-trigger]').forEach(b=>b.onclick=()=>$(b.dataset.photoTrigger)?.click());
+ document.querySelectorAll('[data-photo-camera]').forEach(b=>b.onclick=()=>{const input=$(b.dataset.photoCamera);if(input){input.setAttribute('capture','environment');input.click()}});
+}
+async function save(e){
+ e.preventDefault();
+ const btn=document.querySelector('.save-entry-btn');
+ if(btn&&btn.disabled)return;
+ if(btn){btn.disabled=true;btn.dataset.originalText=btn.textContent;btn.textContent='Verificando...'}
+ verificationReset();
+ verificationStatus('checking','Verificando seu registro...');
+ const get=id=>$(id);
+ try{
+   const checks=[
+     ['Data',!!get('entryDate')?.value],
+     ['Funcionário',!!get('entryEmployee')?.value.trim()],
+     ['Placa',(get('entryPlate')?.value||'').replace(/[ -]/g,'').length>=6],
+     ['Hodômetro',+(get('entryOdo')?.value||0)>0],
+     ['Qtd. — Litros',+(get('entryLiters')?.value||0)>0],
+     ['Possui Antifurto',!!get('entryAnti')?.value],
+     ['Tanques',!!get('entryTanks')?.value]
+   ];
+   const bad=[];
+   for(let k=0;k<checks.length;k++){
+     await new Promise(r=>setTimeout(r,140));
+     if(!checks[k][1])bad.push(checks[k][0]);
+     verificationProgress(Math.round((k+1)/checks.length*72),'Verificando '+checks[k][0]+'...');
+   }
+   const plate=(get('entryPlate')?.value||'').toUpperCase().replace(/[ -]/g,'');
+   const odo=+(get('entryOdo')?.value||0);
+   const last=lastForPlate(plate);
+   if(last&&odo<last.odo)bad.push('Hodômetro menor que o último registro ('+fmt(last.odo)+' km)');
+   await new Promise(r=>setTimeout(r,180));
+   verificationProgress(84,'Conferindo consistência dos dados...');
+   if(bad.length){
+     verificationStatus('error','Revise o registro');
+     if(typeof showEntryValidation==='function')showEntryValidation('Revise: '+bad.join(', ')+'.','error');
+     return;
+   }
+   await new Promise(r=>setTimeout(r,180));
+   verificationProgress(94,'Salvando o registro...');
+   const employee=get('entryEmployee').value.trim().toUpperCase();
+   const liters=+(get('entryLiters').value||0),anti=get('entryAnti').value,tanks=get('entryTanks').value;
+   const photoPlate=get('entryPhotoPlate')?.files?.[0],photoOdo=get('entryPhotoOdo')?.files?.[0],photoPump=get('entryPhotoPump')?.files?.[0];
+   const o={'DATA':get('entryDate').value,'HORA':get('entryTime').value,'FUNCIONÁRIO':employee,'Placa':plate,'Qtd - Litros':String(liters),'Hodômetro':String(odo),'Possuí Antifurto?':anti,'Quantos tanque o veículo possui?':tanks,employee,plate,odo,liters,date:get('entryDate').value,time:get('entryTime').value,photoPlate:photoPlate?.name||'',photoOdo:photoOdo?.name||'',photoPump:photoPump?.name||'',photoCount:[photoPlate,photoOdo,photoPump].filter(Boolean).length};
+   let arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
+   arr.push(o);
+   localStorage.setItem('costalogAbastecimentos',JSON.stringify(arr));
+   allRows.push({...o,id:'local-'+Date.now()});
+   verificationStatus('success','Tudo certo com o seu registro');
+   await new Promise(r=>setTimeout(r,1200));
+   modal(false);
+   try{renderAll();view('answers')}catch(renderError){console.error('Registro salvo; erro ao atualizar a visualização:',renderError)}
+ }catch(err){
+   console.error('Erro ao registrar abastecimento:',err);
+   verificationStatus('error','Não foi possível concluir o registro');
+   if(typeof showEntryValidation==='function')showEntryValidation('O registro não foi concluído. Tente novamente.','error');
+ }finally{
+   if(btn){btn.disabled=false;btn.textContent=btn.dataset.originalText||'✓ Registrar abastecimento'}
+ }
+}
 async function login(e){e.preventDefault();let h=await sha($('accessPassword').value);if(h!==PASS.admin&&h!==PASS.user){$('loginError').textContent='Senha incorreta. Verifique os dados e tente novamente.';return}$('loginError').textContent='';sessionStorage.setItem('costalogAuth','1');$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');load().catch(err=>{$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>Confira o arquivo CSV no repositório.</span>';console.error(err)})}
 function theme(){let d=localStorage.getItem('costalogTheme')==='dark';document.body.classList.toggle('dark-mode',d);const b=$('themeToggle');if(b)b.textContent=d?'☀':'☾';renderSettings?.()}
 $('loginForm').addEventListener('submit',login);$('togglePassword').onclick=()=>{$('accessPassword').type=$('accessPassword').type==='password'?'text':'password'};$('logoutBtn').onclick=()=>{sessionStorage.removeItem('costalogAuth');location.reload()};$('themeToggle').onclick=()=>{localStorage.setItem('costalogTheme',document.body.classList.contains('dark-mode')?'light':'dark');theme()};
 document.addEventListener('click',e=>{let v=e.target.closest('[data-view]');if(v)view(v.dataset.view);if(e.target.closest('[data-close]'))modal(false);if(e.target.closest('#newEntryBtn,#historyNewBtn'))modal(true);let p=e.target.closest('[data-page]');if(p&&!p.disabled){currentPage=+p.dataset.page;history()}});
-$('entryForm').onsubmit=save;theme();
+$('entryForm').onsubmit=save;setupPhotoInputs();theme();
 (function(){let c=$('matrixLayer'),x=c.getContext('2d'),w,h,d;function z(){w=c.width=innerWidth;h=c.height=innerHeight;d=Array(Math.ceil(w/18)).fill(1)}function f(){x.clearRect(0,0,w,h);x.fillStyle='rgba(0,0,0,.4)';x.font='12px monospace';d.forEach((y,i)=>{x.fillText(Math.random()>.5?'1':'0',i*18,y*18);if(y*18>h&&Math.random()>.975)d[i]=0;d[i]++});requestAnimationFrame(f)}z();addEventListener('resize',z);f()})();
 theme();
 if(sessionStorage.getItem('costalogAuth')){$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');load().catch(console.error)}
