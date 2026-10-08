@@ -35,7 +35,7 @@
 <button class="nav-btn admin-only-nav" data-view="answers">Respostas</button>
 <button class="nav-btn" data-view="settings">Configurações</button>
 </nav>
-<div class="top-actions"><span class="role-badge">USUÁRIO</span><button id="themeToggle" class="theme-toggle" type="button">☾</button><button id="logoutBtn" class="ghost-btn">Sair</button></div>
+<div class="top-actions"><span class="role-badge">USUÁRIO</span><button id="notificationBtn" class="notification-btn admin-only-nav" type="button" title="Notificações">🔔<span id="notificationCount" class="notification-count hidden">0</span></button><button id="themeToggle" class="theme-toggle" type="button">☾</button><button id="logoutBtn" class="ghost-btn">Sair</button></div>
 </div></header>
 
 <main class="portal-main"><div class="container">
@@ -201,7 +201,11 @@
 
 </div></main>
 <footer class="footer"><img src="assets/logo-costalog.svg" alt="Costalog"><span>Uso interno • Controle de Abastecimento Costalog</span><span class="footer-status"><i></i> Dados carregados</span></footer>
+<div id="notificationPanel" class="notification-panel hidden"><div class="notification-head"><div><strong>Notificações</strong><small>Novos registros de abastecimento</small></div><button type="button" id="clearNotifications">×</button></div><div id="notificationList"></div></div>
+<div id="notificationToast" class="notification-toast hidden" aria-live="polite"></div>
 </div>
+
+<div id="receiptModal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-card receipt-modal-card"><div class="modal-head"><div><span class="eyebrow red">COMPROVANTE DE REGISTRO</span><h2 id="receiptTitle">Registro realizado com sucesso</h2><p id="receiptSubtitle"></p></div></div><div id="receiptBody" class="receipt-body"></div><div class="receipt-modal-actions"><button type="button" class="primary-btn" id="receiptCloseBtn">Fechar comprovante</button></div></div></div>
 
 <div id="entryModal" class="modal hidden"><div class="modal-backdrop" data-close></div><div class="modal-card entry-modal-card">
 <div class="modal-head"><div><span class="eyebrow red">NOVO REGISTRO</span><h2>Controle de abastecimento</h2><p>Preencha as perguntas do formulário original com validações automáticas.</p></div><button class="close-btn" data-close>×</button></div>
@@ -233,5 +237,5 @@
 <div class="notice"><strong>Importante:</strong> este registro é salvo localmente neste navegador. A base histórica do Driver permanece somente para consulta; os novos registros não são compartilhados automaticamente com outros computadores até conectarmos uma base central.</div>
 <div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancelar</button><button class="primary-btn save-entry-btn" type="submit">✓ Registrar abastecimento</button></div>
 </form></div></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script><script src="app.js?v=20261008p"></script>
-</body></html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script><script src="app.js?v=20261008q"></script>
+<script>document.addEventListener("click",e=>{if(e.target.closest("#receiptCloseBtn"))document.getElementById("receiptModal")?.classList.add("hidden")});</script></body></html>
