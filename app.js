@@ -128,10 +128,12 @@ async function save(e){
    }
    await new Promise(r=>setTimeout(r,180));
    verificationProgress(94,'Salvando o registro...');
+   const localId='local-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
    const employee=get('entryEmployee').value.trim().toUpperCase();
    const liters=+(get('entryLiters').value||0),anti=get('entryAnti').value,tanks=get('entryTanks').value;
    const photoPlate=get('entryPhotoPlate')?.files?.[0],photoOdo=get('entryPhotoOdo')?.files?.[0],photoPump=get('entryPhotoPump')?.files?.[0];
-   const o={'DATA':get('entryDate').value,'HORA':get('entryTime').value,'FUNCIONÁRIO':employee,'Placa':plate,'Qtd - Litros':String(liters),'Hodômetro':String(odo),'Possuí Antifurto?':anti,'Quantos tanque o veículo possui?':tanks,employee,plate,odo,liters,date:get('entryDate').value,time:get('entryTime').value,photoPlate:photoPlate?.name||'',photoOdo:photoOdo?.name||'',photoPump:photoPump?.name||'',photoCount:[photoPlate,photoOdo,photoPump].filter(Boolean).length};
+   const o={'DATA':get('entryDate').value,'HORA':get('entryTime').value,'FUNCIONÁRIO':employee,'Placa':plate,'Qtd - Litros':String(liters),'Hodômetro':String(odo),'Possuí Antifurto?':anti,'Quantos tanque o veículo possui?':tanks,employee,plate,odo,liters,date:get('entryDate').value,time:get('entryTime').value,photoPlate:photoPlate?('localphoto:'+localId+':plate'):'',photoOdo:photoOdo?('localphoto:'+localId+':odo'):'',photoPump:photoPump?('localphoto:'+localId+':pump'):'',photoPlateName:photoPlate?.name||'',photoOdoName:photoOdo?.name||'',photoPumpName:photoPump?.name||'',photoCount:[photoPlate,photoOdo,photoPump].filter(Boolean).length};
+   await Promise.all([[photoPlate,'plate'],[photoOdo,'odo'],[photoPump,'pump']].filter(x=>x[0]).map(x=>saveLocalPhoto(localId+':'+x[1],x[0])));
    let arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
    arr.push(o);
    localStorage.setItem('costalogAbastecimentos',JSON.stringify(arr));
@@ -262,6 +264,22 @@ function renderTimeDistribution(rows){
 function renderList(id,groups,limit=12){
  const el=$(id);if(!el)return;el.innerHTML=groups.slice(0,limit).map(g=>'<div class="answer-list-item">'+esc(g[0])+' <strong>'+fmt(g[1])+'</strong></div>').join('')||'<div class="no-results">Nenhuma resposta.</div>';
 }
+const PHOTO_DB='costalog-fotos-v1';
+function openPhotoDB(){
+ return new Promise((resolve,reject)=>{
+  if(!window.indexedDB)return reject(new Error('IndexedDB indisponível'));
+  const req=indexedDB.open(PHOTO_DB,1);
+  req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('photos'))req.result.createObjectStore('photos')};
+  req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+ });
+}
+async function saveLocalPhoto(key,file){
+ if(!file)return;
+ try{const db=await openPhotoDB();await new Promise((res,rej)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put({blob:file,type:file.type,name:file.name},key);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});db.close()}catch(e){console.warn('Foto local não armazenada:',e)}
+}
+async function getLocalPhoto(key){
+ try{const db=await openPhotoDB();const value=await new Promise((res,rej)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(key);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});db.close();return value||null}catch(e){console.warn('Foto local não encontrada:',e);return null}
+}
 function extractDriveId(v){
  const s=String(v||'').trim();
  if(!s)return '';
@@ -277,6 +295,7 @@ function photoSource(v){
  const s=String(v||'').trim();if(!s)return {view:'',download:'',kind:'none'};
  if(/^data:image\//i.test(s))return {view:s,download:s,kind:'data'};
  if(/^blob:/i.test(s))return {view:s,download:s,kind:'blob'};
+ if(/^localphoto:/i.test(s))return {view:'',download:'',kind:'local'};
  if(/^https?:\/\//i.test(s)){
    const id=extractDriveId(s);
    if(id)return {view:'https://drive.google.com/uc?export=view&id='+id,download:'https://drive.google.com/uc?export=download&id='+id,kind:'drive'};
@@ -290,7 +309,9 @@ function photoSource(v){
 function photoHref(v){return photoSource(v).view}
 function isImageValue(v){return photoSource(v).kind!=='none'&&photoSource(v).kind!=='name'}
 async function openPhotoViewer(value,title){
- const src=photoSource(value);if(!src.view)return;
+ let src=photoSource(value);
+ if(src.kind==='local'){const rec=await getLocalPhoto(String(value).slice(10));if(!rec?.blob){alert('A imagem local não foi encontrada neste navegador.');return}const url=URL.createObjectURL(rec.blob);src={view:url,download:url,kind:'blob'};setTimeout(()=>URL.revokeObjectURL(url),120000)}
+ if(!src.view)return;
  const modalEl=$('answerDetailModal'),body=$('answerDetailBody');if(!modalEl||!body)return;
  $('answerDetailTitle').textContent=title||'Evidência';
  $('answerDetailSubtitle').textContent='Visualização da imagem anexada';
