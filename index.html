@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#e30613"><title>Controle de Abastecimento | Costalog</title>
-<link rel="stylesheet" href="style.css?v=20261008g">
+<link rel="stylesheet" href="style.css?v=20261008h">
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -15,11 +15,16 @@
 <span class="eyebrow">ACESSO RESTRITO</span>
 <h1>Central de<br><span>Abastecimento</span></h1>
 <p>Acesse o portal para registrar, consultar e acompanhar os abastecimentos da frota.</p>
-<form id="loginForm">
+<div id="loginChoice" class="login-choice">
+  <button type="button" id="userAccessBtn" class="login-choice-btn login-choice-user"><span class="login-choice-icon">✓</span><span><strong>Registrar Abastecimento</strong><small>Acesso direto para usuários</small></span><b>→</b></button>
+  <button type="button" id="adminAccessBtn" class="login-choice-btn login-choice-admin"><span class="login-choice-icon">▣</span><span><strong>Acessar Painel</strong><small>Acesso exclusivo para administradores</small></span><b>→</b></button>
+</div>
+<form id="loginForm" class="hidden">
 <label for="accessPassword">Senha de acesso</label>
-<div class="password-wrap"><input id="accessPassword" type="password" autocomplete="current-password" placeholder="Digite sua senha" required>
+<div class="password-wrap"><input id="accessPassword" type="password" autocomplete="current-password" placeholder="Digite a senha do painel" required>
 <button type="button" id="togglePassword" aria-label="Mostrar senha" title="Mostrar senha"><svg class="eye-icon eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.8"></circle></svg><svg class="eye-icon eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"></path><path d="M10.6 6.2A10.7 10.7 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3.2 3.7"></path><path d="M6.1 6.8C3.8 8.3 2.5 12 2.5 12s3.5 6 9.5 6c1.5 0 2.8-.3 4-.8"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path></svg></button></div>
-<button class="primary-btn login-submit" type="submit"><span>Entrar no portal</span><b>→</b></button>
+<button class="primary-btn login-submit" type="submit"><span>Acessar Painel</span><b>→</b></button>
+<button class="login-back-btn" type="button" id="loginBackBtn">← Voltar para opções</button>
 <div id="loginError" class="form-error"></div>
 </form>
 <div class="login-security"><span class="security-icon">⌁</span><span>Acesso protegido • Ambiente interno</span></div>
@@ -237,5 +242,5 @@
 <div class="notice"><strong>Importante:</strong> este registro é salvo localmente neste navegador. A base histórica do Driver permanece somente para consulta; os novos registros não são compartilhados automaticamente com outros computadores até conectarmos uma base central.</div>
 <div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancelar</button><button class="primary-btn save-entry-btn" type="submit">✓ Registrar abastecimento</button></div>
 </form></div></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script><script src="app.js?v=20261008s"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script><script src="app.js?v=20261008t"></script>
 <script>document.addEventListener("click",e=>{if(e.target.closest("#receiptCloseBtn"))document.getElementById("receiptModal")?.classList.add("hidden")});</script></body></html>
