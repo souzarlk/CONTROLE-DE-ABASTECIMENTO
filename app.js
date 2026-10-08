@@ -23,11 +23,12 @@ function normalize(a){
    return o
  }).filter(x=>x.plate)
 }
+function answerKey(r){return [r.employee||r['FUNCIONÁRIO']||'',r.date||r.DATA||'',r.time||r.HORA||'',r.plate||r.Placa||'',r.odo||r['Hodômetro']||'',r.liters||r['Qtd - Litros']||''].map(v=>String(v).trim().toUpperCase()).join('|')}
 function fmt(n,d=0){return new Intl.NumberFormat('pt-BR',{maximumFractionDigits:d}).format(n)}
 function br(d){if(!d)return'—';let p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
 function dt(o){return br(o.date)+' '+(o.time||'')}
 async function sha(s){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('')}
-async function load(){try{const r=await fetch(DATA_URL+'?v=20261007',{cache:'no-store'});if(!r.ok)throw Error('Arquivo ZIP não encontrado ('+r.status+')');const zip=await JSZip.loadAsync(await r.arrayBuffer());const files=Object.keys(zip.files).filter(k=>/\.csv$/i.test(k)&&!zip.files[k].dir);if(!files.length)throw Error('CSV não encontrado no ZIP');const textCsv=await zip.files[files[0]].async('string');allRows=normalize(csv(textCsv));const local=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');const deleted=JSON.parse(localStorage.getItem('costalogDeletedAnswers')||'[]');const deletedSet=new Set(deleted.map(String));allRows.push(...local.filter(x=>!deletedSet.has(String(x.id||x.localId||''))).map((x,i)=>({...x,id:x.id||('local-'+i),plate:String(x.plate||x.Placa||'').toUpperCase().replace(/[ -]/g,'')})));renderAll();if(typeof populateQuestionOptions==='function')populateQuestionOptions();$('loading').classList.add('hidden');initializeLiveResponses();const savedView=sessionStorage.getItem('costalogCurrentView')||'questions';view(savedView)}catch(err){console.error('Erro ao carregar base:',err);$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>'+esc(err.message)+'</span><button class="secondary-btn" onclick="location.reload()">Tentar novamente</button>'}}
+async function load(){try{const r=await fetch(DATA_URL+'?v=20261008',{cache:'no-store'});if(!r.ok)throw Error('Arquivo ZIP não encontrado ('+r.status+')');const zip=await JSZip.loadAsync(await r.arrayBuffer());const files=Object.keys(zip.files).filter(k=>/\.csv$/i.test(k)&&!zip.files[k].dir);if(!files.length)throw Error('CSV não encontrado no ZIP');const textCsv=await zip.files[files[0]].async('string');allRows=normalize(csv(textCsv));const local=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');const deleted=JSON.parse(localStorage.getItem('costalogDeletedAnswers')||'[]');const deletedIds=new Set(deleted.map(x=>String(typeof x==='object'?x.id:x)));const deletedKeys=new Set(deleted.map(x=>String(typeof x==='object'?(x.key||''):'')));allRows.push(...local.filter(x=>!deletedIds.has(String(x.id||x.localId||''))&&!deletedKeys.has(answerKey(x))).map((x,i)=>({...x,id:x.id||('local-'+i),plate:String(x.plate||x.Placa||'').toUpperCase().replace(/[ -]/g,'')})));renderAll();if(typeof populateQuestionOptions==='function')populateQuestionOptions();$('loading').classList.add('hidden');initializeLiveResponses();const savedView=sessionStorage.getItem('costalogCurrentView')||'questions';view(savedView)}catch(err){console.error('Erro ao carregar base:',err);$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>'+esc(err.message)+'</span><button class="secondary-btn" onclick="location.reload()">Tentar novamente</button>'}}
 function renderAll(){renderSettings();renderQuestions()}
 function stats(){let ls=allRows.reduce((a,r)=>a+r.liters,0),od=allRows.filter(r=>r.odo).map(r=>r.odo),dates=[...allRows].sort((a,b)=>a.date.localeCompare(b.date)),last=[...allRows].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time))[0];$('statRecords').textContent=fmt(allRows.length);$('statLiters').textContent=fmt(ls,0)+' L';$('statVehicles').textContent=fmt(new Set(allRows.map(r=>r.plate)).size);$('statOdo').textContent=fmt(od.reduce((a,b)=>a+b,0)/(od.length||1),0)+' km';$('statLast').textContent=last?br(last.date):'—';$('periodLabel').textContent=dates.length?br(dates[0].date)+' — '+br(last.date):'—'}
 function chart(){let m={};allRows.forEach(r=>{let k=r.date.slice(0,7);if(k)m[k]=(m[k]||0)+r.liters});let ks=Object.keys(m).sort().slice(-12),mx=Math.max(...ks.map(k=>m[k]),1);$('monthChart').innerHTML=ks.map(k=>{let [y,n]=k.split('-');let lab=new Date(+y,+n-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','');return '<div class="bar-item"><b>'+fmt(m[k],0)+' L</b><i style="height:'+Math.max(8,m[k]/mx*145)+'px"></i><small>'+lab+'</small></div>'}).join('')}
@@ -516,7 +517,7 @@ function initializeLiveResponses(){
 }
 function checkLiveResponses(){
  let local=[];try{local=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]')}catch(e){return}
- const fresh=local.filter(r=>{const id=String(r.id||'');return id.startsWith('local-')&&!notificationSeenIds.has(id)});
+ const deleted=JSON.parse(localStorage.getItem('costalogDeletedAnswers')||'[]');const deletedIds=new Set(deleted.map(x=>String(typeof x==='object'?x.id:x)));const deletedKeys=new Set(deleted.map(x=>String(typeof x==='object'?(x.key||''):'')));const fresh=local.filter(r=>{const id=String(r.id||'');return id.startsWith('local-')&&!notificationSeenIds.has(id)&&!deletedIds.has(id)&&!deletedKeys.has(answerKey(r))});
  if(fresh.length&&isAdmin()){
    fresh.forEach(r=>{notificationSeenIds.add(String(r.id));notificationItems.unshift({...r,id:String(r.id)});if(!allRows.some(x=>String(x.id)===String(r.id)))allRows.push({...r,id:String(r.id)});notificationToast(r.employee)});
    renderNotifications();renderAnswers();
@@ -530,7 +531,12 @@ function setupLiveNotificationEvents(){
 
 function setupExtraPages(){
  ['answerSearch','answerDateFrom','answerDateTo','answerEmployee','answerPlate','answerAnti'].forEach(id=>{const el=$(id);el?.addEventListener('input',renderAnswers);el?.addEventListener('change',renderAnswers)});
- $('refreshAnswers')?.addEventListener('click',renderAnswers);$('exportAnswersBtn')?.addEventListener('click',exportAnswers);
+ $('refreshAnswers')?.addEventListener('click',async e=>{
+ e.preventDefault();
+ const btn=$('refreshAnswers');if(!btn||btn.dataset.refreshing==='1')return;
+ btn.dataset.refreshing='1';const old=btn.innerHTML;btn.innerHTML='↻ Atualizando...';btn.disabled=true;
+ try{await load();view('answers')}finally{btn.dataset.refreshing='';btn.innerHTML=old;btn.disabled=false}
+});$('exportAnswersBtn')?.addEventListener('click',exportAnswers);
  $('clearAnswerFilters')?.addEventListener('click',()=>{['answerSearch','answerDateFrom','answerDateTo','answerEmployee','answerPlate','answerAnti'].forEach(id=>{if($(id))$(id).value=''});renderAnswers()});
  $('answersBody')?.addEventListener('click',e=>{const del=e.target.closest('[data-delete-answer]');if(del){e.stopPropagation();deleteAnswer(del.dataset.deleteAnswer);return}const row=e.target.closest('.answer-row');if(row)showAnswerDetail(row.dataset.answerId)});document.addEventListener('click',e=>{const b=e.target.closest('[data-photo-value]');if(b&&!b.closest('.answerDetailModal'))openPhotoViewer(b.dataset.photoValue,b.dataset.photoTitle)});$('answerDetailBody')?.addEventListener('click',e=>{const page=e.target.closest('[data-photo-page]');if(page&&!page.disabled){photoGalleryState.page+=Number(page.dataset.photoPage);renderPhotoGalleryPage();return}const b=e.target.closest('[data-photo-value]');if(b)openPhotoViewer(b.dataset.photoValue,b.dataset.photoTitle)});$('individualPagination')?.addEventListener('click',e=>{const b=e.target.closest('[data-ind-page]');if(!b||b.disabled)return;individualPage=+b.dataset.indPage;renderIndividual();$('answerIndividualTab')?.scrollIntoView({behavior:'smooth',block:'start'})});$('viewAllAnswersBtn')?.addEventListener('click',()=>{document.querySelectorAll('[data-answer-tab]').forEach(x=>x.classList.toggle('active',x.dataset.answerTab==='individual'));['summary','question','individual'].forEach(k=>$('answer'+k.charAt(0).toUpperCase()+k.slice(1)+'Tab')?.classList.toggle('hidden',k!=='individual'));individualPage=1;renderIndividual();$('answerIndividualTab')?.scrollIntoView({behavior:'smooth',block:'start'})});
  document.querySelectorAll('[data-answer-close]')?.forEach(x=>x.addEventListener('click',()=>$('answerDetailModal')?.classList.add('hidden')));
@@ -547,26 +553,22 @@ function deleteAnswer(id){
  if(!target.startsWith('local-')){alert('Este registro pertence à base histórica e não pode ser excluído pelo portal.');return}
  if(!confirm('Excluir definitivamente esta resposta e as fotos anexadas?'))return;
  try{
+   const key=answerKey(row);
    let deleted=JSON.parse(localStorage.getItem('costalogDeletedAnswers')||'[]');
-   if(!deleted.includes(target))deleted.push(target);
+   if(!deleted.some(x=>String(typeof x==='object'?x.id:x)===target))deleted.push({id:target,key});
    localStorage.setItem('costalogDeletedAnswers',JSON.stringify(deleted));
    let arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
-   arr=arr.filter(r=>String(r.id||r.localId||'')!==target);
+   arr=arr.filter(r=>String(r.id||r.localId||'')!==target&&answerKey(r)!==key);
    localStorage.setItem('costalogAbastecimentos',JSON.stringify(arr));
-   const verify=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
-   if(verify.some(r=>String(r.id||r.localId||'')===target))throw new Error('O registro ainda está presente no armazenamento local');
+   allRows=allRows.filter(r=>String(r.id)!==target);
+   notificationItems=notificationItems.filter(n=>String(n.id)!==target);
    ['plate','odo','pump'].forEach(k=>{
      localStorage.removeItem('costalogPhotoBackup:'+target+':'+k);
      openPhotoDB().then(db=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(target+':'+k);tx.oncomplete=()=>db.close();tx.onerror=()=>db.close()}).catch(()=>{});
    });
-   allRows=allRows.filter(r=>String(r.id)!==target);
-   notificationItems=notificationItems.filter(n=>String(n.id)!==target);
    renderAnswers();renderSettings();applyRoleUI();
    if($('answerDetailModal'))$('answerDetailModal').classList.add('hidden');
- }catch(err){
-   console.error('Falha ao excluir resposta:',err);
-   alert('Não foi possível excluir a resposta: '+(err.message||'erro desconhecido'));
- }
+ }catch(err){console.error('Falha ao excluir resposta:',err);alert('Não foi possível excluir a resposta: '+(err.message||'erro desconhecido'))}
 }
 function renderSettings(){const r=$('settingsRecords');if(r)r.textContent=fmt(allRows.length);const d=$('settingDark');if(d)d.checked=document.body.classList.contains('dark-mode');const a=$('settingAuto');if(a)a.checked=localStorage.getItem('costalogAutoRefresh')!=='0';const an=$('settingAnti');if(an)an.checked=localStorage.getItem('costalogAlertAnti')!=='0';const vo=$('settingVolume');if(vo)vo.checked=localStorage.getItem('costalogAlertVolume')!=='0'}
 const originalView=view;view=function(v){originalView(v)};
