@@ -132,7 +132,9 @@ async function save(e){
    const employee=get('entryEmployee').value.trim().toUpperCase();
    const liters=+(get('entryLiters').value||0),anti=get('entryAnti').value,tanks=get('entryTanks').value;
    const photoPlate=get('entryPhotoPlate')?.files?.[0],photoOdo=get('entryPhotoOdo')?.files?.[0],photoPump=get('entryPhotoPump')?.files?.[0];
-   const o={id:localId,'DATA':get('entryDate').value,'HORA':get('entryTime').value,'FUNCIONÁRIO':employee,'Placa':plate,'Qtd - Litros':String(liters),'Hodômetro':String(odo),'Possuí Antifurto?':anti,'Quantos tanque o veículo possui?':tanks,employee,plate,odo,liters,date:get('entryDate').value,time:get('entryTime').value,photoPlate:photoPlate?('localphoto:'+localId+':plate'):'',photoOdo:photoOdo?('localphoto:'+localId+':odo'):'',photoPump:photoPump?('localphoto:'+localId+':pump'):'',photoPlateName:photoPlate?.name||'',photoOdoName:photoOdo?.name||'',photoPumpName:photoPump?.name||'',photoCount:[photoPlate,photoOdo,photoPump].filter(Boolean).length};
+   verificationProgress(96,'Preparando as fotos...');
+   const [photoPlateData,photoOdoData,photoPumpData]=await Promise.all([photoPlate?imageDataUrl(photoPlate):'',photoOdo?imageDataUrl(photoOdo):'',photoPump?imageDataUrl(photoPump):'']);
+   const o={id:localId,'DATA':get('entryDate').value,'HORA':get('entryTime').value,'FUNCIONÁRIO':employee,'Placa':plate,'Qtd - Litros':String(liters),'Hodômetro':String(odo),'Possuí Antifurto?':anti,'Quantos tanque o veículo possui?':tanks,employee,plate,odo,liters,date:get('entryDate').value,time:get('entryTime').value,photoPlate:photoPlate?('localphoto:'+localId+':plate'):'',photoOdo:photoOdo?('localphoto:'+localId+':odo'):'',photoPump:photoPump?('localphoto:'+localId+':pump'):'',photoPlateName:photoPlate?.name||'',photoOdoName:photoOdo?.name||'',photoPumpName:photoPump?.name||'',photoPlateData:photoPlateData,photoOdoData:photoOdoData,photoPumpData:photoPumpData,photoCount:[photoPlate,photoOdo,photoPump].filter(Boolean).length};
    const photoJobs=[[photoPlate,'plate'],[photoOdo,'odo'],[photoPump,'pump']].filter(x=>x[0]).map(x=>saveLocalPhoto(localId+':'+x[1],x[0]));
    await Promise.all(photoJobs);
    let arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
@@ -275,6 +277,27 @@ function openPhotoDB(){
   req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
  });
 }
+async function imageDataUrl(file,maxSide=1100,quality=.68){
+ return await new Promise((resolve,reject)=>{
+  const fr=new FileReader();
+  fr.onerror=()=>reject(fr.error||new Error('Falha ao ler a foto'));
+  fr.onload=()=>{
+   const img=new Image();
+   img.onerror=()=>reject(new Error('A imagem anexada é inválida'));
+   img.onload=()=>{
+    const scale=Math.min(1,maxSide/Math.max(img.width,img.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(img.width*scale));
+    canvas.height=Math.max(1,Math.round(img.height*scale));
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    resolve(canvas.toDataURL('image/jpeg',quality));
+   };
+   img.src=fr.result;
+  };
+  fr.readAsDataURL(file);
+ });
+}
 async function saveLocalPhoto(key,file){
  if(!file)return true;
  const db=await openPhotoDB();
@@ -298,7 +321,9 @@ async function saveLocalPhoto(key,file){
 }
 async function getLocalPhoto(key){
  try{const db=await openPhotoDB();const value=await new Promise((res,rej)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(key);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});db.close();if(value?.blob)return value}catch(e){console.warn('IndexedDB indisponível:',e)}
- try{const backup=JSON.parse(localStorage.getItem('costalogPhotoBackup:'+key)||'null');if(backup?.dataUrl)return {dataUrl:backup.dataUrl,name:backup.name||'foto.jpg',size:backup.size||0,type:'image/jpeg'};}catch(e){console.warn('Backup local indisponível:',e)}
+ const parts=String(key).split(':');const id=parts.slice(0,2).join(':'),kind=parts[2];
+ const row=allRows.find(r=>String(r.id)===id)||JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]').find(r=>String(r.id)===id);
+ if(row){const field=kind==='plate'?'photoPlateData':kind==='odo'?'photoOdoData':'photoPumpData';const data=row[field];if(data)return {dataUrl:data,name:row[kind==='plate'?'photoPlateName':kind==='odo'?'photoOdoName':'photoPumpName']||'foto.jpg',type:'image/jpeg'}}
  return null;
 }
 function extractDriveId(v){
@@ -362,8 +387,8 @@ function isDirectImageValue(v){const k=photoSource(v).kind;return k==='url'||k==
 async function hydrateLocalPhotoButton(button,value,title){
  if(!button||photoSource(value).kind!=='local')return;
  const rec=await getLocalPhoto(String(value).slice(10));
- if(!rec?.blob){button.innerHTML='⚠';button.title='Imagem não encontrada neste navegador';return}
- const url=URL.createObjectURL(rec.blob);
+ if(!rec){button.innerHTML='⚠';button.title='Imagem não encontrada';return}
+ const url=rec.dataUrl||URL.createObjectURL(rec.blob);
  button.innerHTML='<img src="'+esc(url)+'" alt="'+esc(title||'Evidência')+'">';
  button.classList.remove('local-photo-thumb');
  button.classList.add('hydrated-local-photo');
@@ -372,8 +397,8 @@ async function hydrateLocalPhotoButton(button,value,title){
 async function addLocalPhotoDownload(container,value,title){
  if(!container||photoSource(value).kind!=='local')return;
  const rec=await getLocalPhoto(String(value).slice(10));
- if(!rec?.blob)return;
- const url=URL.createObjectURL(rec.blob);
+ if(!rec)return;
+ const url=rec.dataUrl||URL.createObjectURL(rec.blob);
  const a=document.createElement('a');
  a.href=url;a.download=rec.name||((title||'evidencia').toLowerCase().replace(/[^a-z0-9]+/gi,'-')+'.jpg');a.textContent='Baixar';
  a.className='local-download-link';
