@@ -383,3 +383,20 @@ body.dark-mode{--black:#f5f5f5;--gray-300:#444;--gray-500:#aaa;--shadow:0 18px 5
 @keyframes chartOrbit{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.donut-orbit,.chart-live .donut-segment-depth,.chart-live .donut-segment-main{animation:none!important}.donut-segment-main,.donut-segment-depth{transition:none}}
 .dark-mode .donut-base{stroke:#303841}.dark-mode .donut-center{text-shadow:0 1px 0 #111}.dark-mode .chart-tooltip{background:rgba(12,15,18,.96);border-color:#49515a}.dark-mode .legend-item{background:#23272c}.dark-mode .legend-item:hover,.dark-mode .legend-item.is-focus{background:#2b3239;border-color:#536b7d}.dark-mode .legend-item.is-dimmed{opacity:.28}
+
+
+/* Confirmação visual de anexos no formulário */
+.photo-preview{min-height:0}
+.photo-attached{display:flex;align-items:center;gap:9px;width:100%;padding:7px 9px;border:1px solid #b9e6ca;border-radius:10px;background:#effaf3}
+.photo-attached img{width:54px;height:54px;flex:0 0 54px;object-fit:cover;border-radius:7px;border:1px solid #cde9d7}
+.photo-attached-info{min-width:0;display:flex;flex:1;flex-direction:column;gap:2px}
+.photo-attached-info strong{font-size:10px;color:#147a43}
+.photo-attached-info span{font-size:9px;color:#5c6870;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.photo-attached-info small{font-size:8px;color:#7b878e}
+.photo-remove{width:27px;height:27px;flex:0 0 27px;border:1px solid #e2bfc3;border-radius:50%;background:#fff;color:#b4000c;font-size:16px;line-height:1;cursor:pointer}
+.photo-remove:hover{background:#fff0f1;border-color:#e30613}
+.photo-error{display:block;padding:8px 10px;border:1px solid #f0b7bb;border-radius:9px;background:#fff4f4;color:#a9000c;font-size:9px}
+.save-entry-btn:disabled{opacity:.72;cursor:wait;transform:none}
+.entry-verification.checking .verification-track span{background:linear-gradient(90deg,#e30613,#ff5962,#e30613);background-size:200% 100%;animation:verificationFlow 1.1s linear infinite}
+@keyframes verificationFlow{to{background-position:200% 0}}
+.dark-mode .photo-attached{background:#192c22;border-color:#2d6648}.dark-mode .photo-attached img{border-color:#396d50}.dark-mode .photo-attached-info strong{color:#72d39b}.dark-mode .photo-attached-info span{color:#c0c8ce}.dark-mode .photo-remove{background:#292124;border-color:#653037;color:#ff9aa0}.dark-mode .photo-error{background:#321d20;border-color:#653037;color:#ff9aa0}
