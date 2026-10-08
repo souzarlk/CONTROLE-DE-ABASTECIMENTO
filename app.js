@@ -33,77 +33,92 @@ $('entryForm').onsubmit=save;theme();
 theme();
 if(sessionStorage.getItem('costalogAuth')){$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');load().catch(console.error)}
 
+
 /* Páginas complementares: Perguntas, Respostas e Configurações */
 function renderQuestions(){const b=$('questionsNewBtn');if(b)b.onclick=()=>modal(true)}
 function filteredAnswerRows(){
- const q=($('answerSearch')?.value||'').trim().toUpperCase();
- const from=$('answerDateFrom')?.value||'',to=$('answerDateTo')?.value||'',emp=$('answerEmployee')?.value||'',plate=$('answerPlate')?.value||'',anti=$('answerAnti')?.value||'';
- return allRows.filter(r=>{
-   const hay=[r.date,r.time,r.employee,r.plate,String(r.liters),String(r.odo),r['Possuí Antifurto?'],r['Quantos tanque o veículo possui?']].join(' ').toUpperCase();
-   return (!q||hay.includes(q))&&(!from||r.date>=from)&&(!to||r.date<=to)&&(!emp||r.employee===emp)&&(!plate||r.plate===plate)&&(!anti||r['Possuí Antifurto?']===anti);
- }).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+ const q=($('answerSearch')?.value||'').trim().toUpperCase(),from=$('answerDateFrom')?.value||'',to=$('answerDateTo')?.value||'',emp=$('answerEmployee')?.value||'',plate=$('answerPlate')?.value||'',anti=$('answerAnti')?.value||'';
+ return allRows.filter(r=>{const hay=[r.date,r.time,r.employee,r.plate,String(r.liters),String(r.odo),r['Possuí Antifurto?'],r['Quantos tanque o veículo possui?']].join(' ').toUpperCase();return(!q||hay.includes(q))&&(!from||r.date>=from)&&(!to||r.date<=to)&&(!emp||r.employee===emp)&&(!plate||r.plate===plate)&&(!anti||r['Possuí Antifurto?']===anti)}).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time))
 }
 function renderAnswerFilterOptions(){
- const es=[...new Set(allRows.map(r=>r.employee).filter(Boolean))].sort(),ps=[...new Set(allRows.map(r=>r.plate).filter(Boolean))].sort();
- if($('answerEmployee')){const v=$('answerEmployee').value;$('answerEmployee').innerHTML='<option value="">Todos os funcionários</option>'+es.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');$('answerEmployee').value=v}
- if($('answerPlate')){const v=$('answerPlate').value;$('answerPlate').innerHTML='<option value="">Todos os veículos</option>'+ps.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');$('answerPlate').value=v}
+ const es=[...new Set(allRows.map(r=>r.employee).filter(Boolean))].sort(),ps=[...new Set(allRows.map(r=>r.plate).filter(Boolean))].sort(),ev=$('answerEmployee'),pv=$('answerPlate');
+ if(ev){const v=ev.value;ev.innerHTML='<option value="">Todos</option>'+es.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');ev.value=v}
+ if(pv){const v=pv.value;pv.innerHTML='<option value="">Todas</option>'+ps.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');pv.value=v}
 }
-function renderAnswers(){
- if(!$('answersBody'))return;
+function groupCounts(rows,key){const m={};rows.forEach(r=>{const v=String(r[key]??'').trim()||'Não informado';m[v]=(m[v]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
+const chartColors=['#e30613','#ef5660','#a9000c','#f58b91','#6f1118','#d62d39','#ffb3b8','#8c2630'];
+function renderDonut(id,legendId,groups,total){
+ const el=$(id),leg=$(legendId);if(!el||!leg)return;
+ if(!groups.length){el.style.background='#eee';el.innerHTML='<span class="donut-center">0<small>respostas</small></span>';leg.innerHTML='';return}
+ let acc=0;const stops=groups.map((g,i)=>{const start=acc;acc+=g[1]/total*360;return chartColors[i%chartColors.length]+' '+start+'deg '+acc+'deg'}).join(', ');
+ el.style.background='conic-gradient('+stops+')';el.innerHTML='<span class="donut-center">'+fmt(total)+'<small>respostas</small></span>';
+ leg.innerHTML=groups.slice(0,8).map((g,i)=>'<div class="legend-item"><i class="legend-dot" style="background:'+chartColors[i%chartColors.length]+'"></i><span>'+esc(g[0])+'</span><strong>'+((g[1]/total)*100).toFixed(1)+'%</strong></div>').join('');
+}
+function renderDateHeatmap(rows){
+ const map={};rows.forEach(r=>{if(!r.date)return;const [y,m,d]=r.date.split('-');if(!map[y+'-'+m])map[y+'-'+m]={y,m,days:{}};map[y+'-'+m].days[d]=(map[y+'-'+m].days[d]||0)+1});
+ const months=Object.values(map).sort((a,b)=>(a.y+a.m).localeCompare(b.y+b.m));const max=Math.max(1,...months.flatMap(x=>Object.values(x.days)));
+ $('dateHeatmap').innerHTML=months.map(x=>'<div class="month-row"><span class="month-name">'+new Date(+x.y,+x.m-1,1).toLocaleDateString('pt-BR',{month:'short',year:'numeric'}).replace('.','')+'</span><div class="day-pills">'+Object.entries(x.days).sort((a,b)=>+a[0]-+b[0]).map(([d,n])=>'<span class="day-pill '+(n>=max*.65?'hot':n>=max*.35?'mid':'')+'">'+d+' <b>'+n+'</b></span>').join('')+'</div></div>').join('')||'<div class="no-results">Nenhuma data disponível.</div>';
+ $('dateQuestionMeta').textContent=fmt(rows.length)+' respostas';
+}
+function renderTimeDistribution(rows){
+ const hours={};rows.forEach(r=>{const t=String(r.time||'').slice(0,5);if(!t)return;const h=t.slice(0,2);(hours[h]??=[]).push(t)});
+ $('timeDistribution').innerHTML=Object.entries(hours).sort((a,b)=>+a[0]-+b[0]).map(([h,vals])=>'<div class="time-row"><span class="hour-label">'+h+' :</span><i class="hour-line"></i><div class="time-pills">'+Object.entries(vals.reduce((m,t)=>(m[t]=(m[t]||0)+1,m),{})).sort((a,b)=>a[0].localeCompare(b[0])).map(([t,n])=>'<span class="time-pill '+(n>=Math.max(2,vals.length*.15)?'hot':'')+'">'+t+' <b>'+n+'</b></span>').join('')+'</div></div>').join('')||'<div class="no-results">Nenhum horário disponível.</div>';
+ $('timeQuestionMeta').textContent=fmt(rows.length)+' respostas';
+}
+function renderList(id,groups,limit=12){
+ const el=$(id);if(!el)return;el.innerHTML=groups.slice(0,limit).map(g=>'<div class="answer-list-item">'+esc(g[0])+' <strong>'+fmt(g[1])+'</strong></div>').join('')||'<div class="no-results">Nenhuma resposta.</div>';
+}
+function renderFiles(id,rows,key,moreId){
+ const vals=rows.map(r=>r[key]).filter(Boolean),el=$(id);if(!el)return;el.innerHTML=vals.slice(0,10).map(v=>'<div class="file-item"><span class="file-icon">▣</span><a href="'+esc(/^https?:\/\//i.test(v)?v:'#')+'" '+(/^https?:\/\//i.test(v)?'target="_blank" rel="noopener"':'onclick="return false"')+'>'+esc(v)+'</a></div>').join('')||'<div class="no-results">Nenhum arquivo disponível.</div>';
+ const more=$(moreId);if(more)more.textContent=vals.length>10?'Mais '+fmt(vals.length-10)+' arquivos':'';
+}
+function renderAnswerSummary(){
+ const rows=filteredAnswerRows(),total=rows.length;
  renderAnswerFilterOptions();
- const rows=filteredAnswerRows(),alerts=rows.filter(r=>!/Sim - ok/i.test(r['Possuí Antifurto?']||'')||r.liters>800).length;
- $('answerTotal').textContent=fmt(rows.length);$('answerLiters').textContent=fmt(rows.reduce((s,r)=>s+r.liters,0),2)+' L';$('answerVehicles').textContent=fmt(new Set(rows.map(r=>r.plate)).size);$('answerAlerts').textContent=fmt(alerts);
- $('answerFilterSummary').textContent=rows.length+' registro'+(rows.length===1?'':'s')+' encontrado'+(rows.length===1?'':'s');
- const body=rows.slice(0,500).map((r,i)=>{const photos=[r.photoPlate,r.photoOdo,r.photoPump].filter(Boolean).length;const alert=!/Sim - ok/i.test(r['Possuí Antifurto?']||'')||r.liters>800;return '<tr class="answer-row" data-answer-id="'+esc(String(r.id))+'"><td class="row-number">'+fmt(i+1)+'</td><td><strong>'+br(r.date)+'</strong></td><td>'+esc(r.time||'—')+'</td><td><strong>'+esc(r.employee||'—')+'</strong></td><td><span class="plate-chip">'+esc(r.plate||'—')+'</span></td><td><strong>'+fmt(r.liters,2)+' L</strong></td><td>'+fmt(r.odo)+' km</td><td><span class="status-dot '+(/Sim - ok/i.test(r['Possuí Antifurto?']||'')?'ok':'warn')+'">'+esc(r['Possuí Antifurto?']||'—')+'</span></td><td>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</td><td>'+(photos?'<span class="evidence-badge">📷 '+photos+'</span>':'<span class="evidence-empty">—</span>')+(alert?'<span class="row-alert">!</span>':'')+'</td></tr>'}).join('');
- $('answersBody').innerHTML=body||'<tr><td colspan="10" class="no-results"><div>⌕</div><strong>Nenhuma resposta encontrada</strong><span>Tente remover algum filtro ou alterar a pesquisa.</span></td></tr>';
- $('answerLastUpdate').textContent='Base atualizada • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+ $('answerTotal').textContent=fmt(total);$('answerFilterSummary').textContent=fmt(total)+' registro'+(total===1?'':'s')+' encontrado'+(total===1?'':'s');$('answerLastUpdate').textContent='Base atualizada • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+ renderDateHeatmap(rows);renderTimeDistribution(rows);
+ const emp=groupCounts(rows,'FUNCIONÁRIO'),anti=groupCounts(rows,'Possuí Antifurto?'),tank=groupCounts(rows,'Quantos tanque o veículo possui?');
+ renderDonut('employeePie','employeeLegend',emp,total);renderDonut('antiPie','antiLegend',anti,total);renderDonut('tankPie','tankLegend',tank,total);
+ $('employeeQuestionMeta').textContent=fmt(total)+' respostas';$('antiQuestionMeta').textContent=fmt(total)+' respostas';$('tankQuestionMeta').textContent=fmt(total)+' respostas';
+ const plates=groupCounts(rows,'Placa'),odos=groupCounts(rows,'Hodômetro'),liters=groupCounts(rows,'Qtd - Litros');
+ renderList('plateList',plates);renderList('odoList',odos,12);renderList('litersList',liters,12);
+ renderFiles('photoPlateList',rows,'photoPlate','photoPlateMore');renderFiles('photoOdoList',rows,'photoOdo','photoOdoMore');renderFiles('photoPumpList',rows,'photoPump','photoPumpMore');
+ ['plate','odo','liters'].forEach((x,i)=>$(x+'QuestionMeta').textContent=fmt(total)+' respostas');
+ $('photoPlateQuestionMeta').textContent=fmt(rows.filter(r=>r.photoPlate).length)+' respostas';$('photoOdoQuestionMeta').textContent=fmt(rows.filter(r=>r.photoOdo).length)+' respostas';$('photoPumpQuestionMeta').textContent=fmt(rows.filter(r=>r.photoPump).length)+' respostas';
+}
+function renderIndividual(){
+ const rows=filteredAnswerRows();$('individualCount').textContent=fmt(rows.length)+' registros';
+ $('answersBody').innerHTML=rows.slice(0,500).map((r,i)=>{const photos=[r.photoPlate,r.photoOdo,r.photoPump].filter(Boolean).length,alert=!/Sim - ok/i.test(r['Possuí Antifurto?']||'')||r.liters>800;return '<tr class="answer-row" data-answer-id="'+esc(String(r.id))+'"><td>'+fmt(i+1)+'</td><td><strong>'+br(r.date)+'</strong></td><td>'+esc(r.time||'—')+'</td><td><strong>'+esc(r.employee||'—')+'</strong></td><td><span class="plate-chip">'+esc(r.plate||'—')+'</span></td><td>'+fmt(r.odo)+' km</td><td><strong>'+fmt(r.liters,2)+' L</strong></td><td><span class="status-dot '+(/Sim - ok/i.test(r['Possuí Antifurto?']||'')?'ok':'warn')+'">'+esc(r['Possuí Antifurto?']||'—')+'</span></td><td>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</td><td>'+(photos?'<span class="evidence-badge">📷 '+photos+'</span>':'—')+(alert?'<span class="row-alert">!</span>':'')+'</td></tr>'}).join('')||'<tr><td colspan="10" class="no-results"><strong>Nenhuma resposta encontrada</strong></td></tr>';
+}
+function renderQuestionTab(){
+ const qs=[['DATA','date'],['HORA','time'],['FUNCIONÁRIO','FUNCIONÁRIO'],['Placa','Placa'],['Foto - Placa','photoPlate'],['Hodômetro','Hodômetro'],['Foto - Hodômetro','photoOdo'],['Qtd - Litros','Qtd - Litros'],['Foto - bomba','photoPump'],['Possui Antifurto?','Possuí Antifurto?'],['Quantos tanque o veículo possui?','Quantos tanque o veículo possui?']];
+ $('questionSelector').innerHTML=qs.map((q,i)=>'<button class="'+(i===0?'active':'')+'" data-question-key="'+esc(q[1])+'">'+esc(q[0])+'</button>').join('');
+ const draw=k=>{document.querySelectorAll('[data-question-key]').forEach(b=>b.classList.toggle('active',b.dataset.questionKey===k));const rows=filteredAnswerRows();let g;if(k==='photoPlate'||k==='photoOdo'||k==='photoPump'){const map={photoPlate:'Foto - Placa',photoOdo:'Foto - Hodômetro',photoPump:'Foto - bomba'};g=rows.map(r=>[r[k],1]).filter(x=>x[0])}else{g=groupCounts(rows,k)};$('questionAnswerContent').innerHTML='<div class="answer-card-head"><div><h3>'+esc(qs.find(x=>x[1]===k)?.[0]||k)+'</h3><span>'+fmt(rows.length)+' respostas</span></div></div><div class="answer-list">'+g.slice(0,100).map(x=>'<div class="answer-list-item">'+esc(x[0])+' <strong>'+fmt(x[1])+'</strong></div>').join('')+'</div>'};
+ document.querySelectorAll('[data-question-key]').forEach(b=>b.onclick=()=>draw(b.dataset.questionKey));draw('date');
 }
 function showAnswerDetail(id){
  const r=allRows.find(x=>String(x.id)===String(id));if(!r)return;
- $('answerDetailTitle').textContent=(r.plate||'Abastecimento')+' • '+br(r.date);
- $('answerDetailSubtitle').textContent=(r.employee||'Funcionário não informado')+' • '+(r.time||'Horário não informado');
+ $('answerDetailTitle').textContent=(r.plate||'Abastecimento')+' • '+br(r.date);$('answerDetailSubtitle').textContent=(r.employee||'Funcionário não informado')+' • '+(r.time||'Horário não informado');
  const photos=[['Foto da placa',r.photoPlate],['Foto do hodômetro',r.photoOdo],['Foto da bomba',r.photoPump]];
  $('answerDetailBody').innerHTML='<div class="detail-summary"><div><small>DATA E HORA</small><strong>'+br(r.date)+' • '+esc(r.time||'—')+'</strong></div><div><small>FUNCIONÁRIO</small><strong>'+esc(r.employee||'—')+'</strong></div><div><small>PLACA</small><strong class="plate-chip">'+esc(r.plate||'—')+'</strong></div></div><div class="detail-grid"><div><span>Hodômetro</span><strong>'+fmt(r.odo)+' km</strong></div><div><span>Quantidade abastecida</span><strong>'+fmt(r.liters,2)+' L</strong></div><div><span>Antifurto</span><strong>'+esc(r['Possuí Antifurto?']||'—')+'</strong></div><div><span>Quantidade de tanques</span><strong>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</strong></div></div><div class="detail-evidence"><h3>Evidências</h3><div class="evidence-grid">'+photos.map(([label,url])=>url?'<a class="evidence-card" href="'+esc(url)+'" target="_blank" rel="noopener"><span>📷</span><div><strong>'+label+'</strong><small>Ver evidência</small></div></a>':'<div class="evidence-card empty"><span>—</span><div><strong>'+label+'</strong><small>Não disponível</small></div></div>').join('')+'</div></div>';
  $('answerDetailModal').classList.remove('hidden');
 }
-
 function exportAnswers(){
- const rows=allRows.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
- const head=['DATA','HORA','FUNCIONÁRIO','Placa','Qtd - Litros','Hodômetro','Possuí Antifurto?','Quantos tanque o veículo possui?','Foto - Placa','Foto - Hodômetro','Foto - bomba'];
+ const rows=filteredAnswerRows(),head=['DATA','HORA','FUNCIONÁRIO','Placa','Qtd - Litros','Hodômetro','Possuí Antifurto?','Quantos tanque o veículo possui?','Foto - Placa','Foto - Hodômetro','Foto - bomba'];
  const csvRows=[head,...rows.map(r=>head.map(k=>String(r[k]??(k==='Foto - Placa'?r.photoPlate:k==='Foto - Hodômetro'?r.photoOdo:k==='Foto - bomba'?r.photoPump:'' )).replaceAll('"','""')))].map(r=>r.map(v=>'"'+v+'"').join(';')).join('\r\n');
- const blob=new Blob(['\\ufeff'+csvRows],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='respostas-abastecimento-costalog.csv';a.click();URL.revokeObjectURL(a.href);
+ const blob=new Blob(['\ufeff'+csvRows],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='respostas-abastecimento-costalog.csv';a.click();URL.revokeObjectURL(a.href);
 }
-function lastForPlate(p){return [...allRows].filter(r=>r.plate===p).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time))[0]}
-function populateQuestionOptions(){const es=[...new Set(allRows.map(r=>r.employee).filter(Boolean))].sort(),ps=[...new Set(allRows.map(r=>r.plate).filter(Boolean))].sort();if($('employeeOptions'))$('employeeOptions').innerHTML=es.map(x=>'<option value="'+esc(x)+'">').join('');if($('plateOptions'))$('plateOptions').innerHTML=ps.map(x=>'<option value="'+esc(x)+'">').join('')}
-function showEntryValidation(msg,type='warn'){const b=$('entryValidation');if(!b)return;b.className='validation-box '+type;b.innerHTML=msg;b.classList.remove('hidden')}
-function updatePlateAutomation(){const p=($('entryPlate')?.value||'').toUpperCase().replace(/[ -]/g,'');const f=$('plateFeedback'),r=lastForPlate(p);if(!f)return;if(!p){f.textContent='';return}if(r){f.className='field-feedback ok';f.textContent='✓ Veículo encontrado • último hodômetro: '+fmt(r.odo)+' km • '+br(r.date)}else{f.className='field-feedback';f.textContent='Novo veículo/placa. Confira a identificação.'}}
-function updateOdoAutomation(){const p=($('entryPlate')?.value||'').toUpperCase().replace(/[ -]/g,''),v=+($('entryOdo')?.value||0),r=lastForPlate(p),f=$('odoFeedback');if(!f)return;if(r&&v<r.odo){f.className='field-feedback error';f.textContent='⚠ Menor que o último hodômetro: '+fmt(r.odo)+' km'}else if(r){f.className='field-feedback ok';f.textContent='✓ Hodômetro coerente com o histórico'}else{f.textContent=''}}
-function updateLitersAutomation(){const v=+($('entryLiters')?.value||0),f=$('litersFeedback');if(!f)return;if(v>800){f.className='field-feedback warn';f.textContent='⚠ Volume acima de 800 L: será marcado para conferência'}else if(v){f.className='field-feedback ok';f.textContent='✓ '+fmt(v,2)+' L informado'}else f.textContent=''}
-function previewPhoto(inputId,previewId){const i=$(inputId),p=$(previewId);if(!i||!p)return;i.addEventListener('change',()=>{p.innerHTML='';const file=i.files?.[0];if(!file)return;const img=document.createElement('img');img.src=URL.createObjectURL(file);img.alt='Pré-visualização';p.appendChild(img);const s=document.createElement('span');s.textContent=file.name;p.appendChild(s)})}
+function renderAnswers(){if(!$('answerSummaryTab'))return;renderAnswerSummary();renderIndividual();renderQuestionTab()}
 function setupExtraPages(){
- ['answerSearch','answerDateFrom','answerDateTo','answerEmployee','answerPlate','answerAnti'].forEach(id=>$(id)?.addEventListener('input',renderAnswers));
- $('refreshAnswers')?.addEventListener('click',renderAnswers);
- $('exportAnswersBtn')?.addEventListener('click',exportAnswers);
- $('clearAnswerFilters')?.addEventListener('click',()=>{['answerSearch','answerDateFrom','answerDateTo'].forEach(id=>{if($(id))$(id).value=''});['answerEmployee','answerPlate','answerAnti'].forEach(id=>{if($(id))$(id).value=''});renderAnswers()});
+ ['answerSearch','answerDateFrom','answerDateTo','answerEmployee','answerPlate','answerAnti'].forEach(id=>{const el=$(id);el?.addEventListener('input',renderAnswers);el?.addEventListener('change',renderAnswers)});
+ $('refreshAnswers')?.addEventListener('click',renderAnswers);$('exportAnswersBtn')?.addEventListener('click',exportAnswers);
+ $('clearAnswerFilters')?.addEventListener('click',()=>{['answerSearch','answerDateFrom','answerDateTo','answerEmployee','answerPlate','answerAnti'].forEach(id=>{if($(id))$(id).value=''});renderAnswers()});
  $('answersBody')?.addEventListener('click',e=>{const row=e.target.closest('.answer-row');if(row)showAnswerDetail(row.dataset.answerId)});
  document.querySelectorAll('[data-answer-close]')?.forEach(x=>x.addEventListener('click',()=>$('answerDetailModal')?.classList.add('hidden')));
- $('exportAnswersBtn')?.addEventListener('click',exportAnswers);
- $('answersNewBtn')?.addEventListener('click',()=>modal(true));
- $('questionsNewBtn')?.addEventListener('click',()=>modal(true));
- $('settingDark')?.addEventListener('change',e=>{localStorage.setItem('costalogTheme',e.target.checked?'dark':'light');theme()});
- $('settingAuto')?.addEventListener('change',e=>localStorage.setItem('costalogAutoRefresh',e.target.checked?'1':'0'));
- $('settingAnti')?.addEventListener('change',e=>localStorage.setItem('costalogAlertAnti',e.target.checked?'1':'0'));
- $('settingVolume')?.addEventListener('change',e=>localStorage.setItem('costalogAlertVolume',e.target.checked?'1':'0'));
+ document.querySelectorAll('[data-answer-tab]').forEach(b=>b.addEventListener('click',()=>{const tab=b.dataset.answerTab;document.querySelectorAll('[data-answer-tab]').forEach(x=>x.classList.toggle('active',x===b));['summary','question','individual'].forEach(k=>$('answer'+k.charAt(0).toUpperCase()+k.slice(1)+'Tab')?.classList.toggle('hidden',k!==tab));if(tab==='summary')renderAnswerSummary();if(tab==='question')renderQuestionTab();if(tab==='individual')renderIndividual()}));
+ $('settingDark')?.addEventListener('change',e=>{localStorage.setItem('costalogTheme',e.target.checked?'dark':'light');theme()});$('settingAuto')?.addEventListener('change',e=>localStorage.setItem('costalogAutoRefresh',e.target.checked?'1':'0'));$('settingAnti')?.addEventListener('change',e=>localStorage.setItem('costalogAlertAnti',e.target.checked?'1':'0'));$('settingVolume')?.addEventListener('change',e=>localStorage.setItem('costalogAlertVolume',e.target.checked?'1':'0'));
  $('clearLocalBtn')?.addEventListener('click',()=>{if(confirm('Remover somente os registros criados neste navegador?')){localStorage.removeItem('costalogAbastecimentos');load()}});
 }
 function renderSettings(){const r=$('settingsRecords');if(r)r.textContent=fmt(allRows.length);const d=$('settingDark');if(d)d.checked=document.body.classList.contains('dark-mode');const a=$('settingAuto');if(a)a.checked=localStorage.getItem('costalogAutoRefresh')!=='0';const an=$('settingAnti');if(an)an.checked=localStorage.getItem('costalogAlertAnti')!=='0';const vo=$('settingVolume');if(vo)vo.checked=localStorage.getItem('costalogAlertVolume')!=='0'}
-const originalView=view;
-view=function(v){originalView(v);if(v==='settings')renderSettings();if(v==='questions')renderQuestions()};
+const originalView=view;view=function(v){originalView(v);if(v==='settings')renderSettings();if(v==='questions')renderQuestions();if(v==='answers')renderAnswers()};
 setupExtraPages();
-
-$('entryPlate')?.addEventListener('input',()=>{const i=$('entryPlate');i.value=i.value.toUpperCase().replace(/[ -]/g,'');updatePlateAutomation();updateOdoAutomation()});
-$('entryOdo')?.addEventListener('input',updateOdoAutomation);
-$('entryLiters')?.addEventListener('input',updateLitersAutomation);
-$('setDateBtn')?.addEventListener('click',()=>showEntryValidation('✓ Data definida para '+br($('entryDate').value)+'.','ok'));
-$('entryDate')?.addEventListener('change',()=>showEntryValidation('Data selecionada: '+br($('entryDate').value)+'. Clique em “Definir” para confirmar.','ok'));
-previewPhoto('entryPhotoPlate','photoPlatePreview');previewPhoto('entryPhotoOdo','photoOdoPreview');previewPhoto('entryPhotoPump','photoPumpPreview');
