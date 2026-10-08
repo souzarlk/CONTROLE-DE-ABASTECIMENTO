@@ -132,13 +132,14 @@ async function save(e){
    const employee=get('entryEmployee').value.trim().toUpperCase();
    const liters=+(get('entryLiters').value||0),anti=get('entryAnti').value,tanks=get('entryTanks').value;
    const photoPlate=get('entryPhotoPlate')?.files?.[0],photoOdo=get('entryPhotoOdo')?.files?.[0],photoPump=get('entryPhotoPump')?.files?.[0];
-   const o={'DATA':get('entryDate').value,'HORA':get('entryTime').value,'FUNCIONÁRIO':employee,'Placa':plate,'Qtd - Litros':String(liters),'Hodômetro':String(odo),'Possuí Antifurto?':anti,'Quantos tanque o veículo possui?':tanks,employee,plate,odo,liters,date:get('entryDate').value,time:get('entryTime').value,photoPlate:photoPlate?('localphoto:'+localId+':plate'):'',photoOdo:photoOdo?('localphoto:'+localId+':odo'):'',photoPump:photoPump?('localphoto:'+localId+':pump'):'',photoPlateName:photoPlate?.name||'',photoOdoName:photoOdo?.name||'',photoPumpName:photoPump?.name||'',photoCount:[photoPlate,photoOdo,photoPump].filter(Boolean).length};
+   const o={id:localId,'DATA':get('entryDate').value,'HORA':get('entryTime').value,'FUNCIONÁRIO':employee,'Placa':plate,'Qtd - Litros':String(liters),'Hodômetro':String(odo),'Possuí Antifurto?':anti,'Quantos tanque o veículo possui?':tanks,employee,plate,odo,liters,date:get('entryDate').value,time:get('entryTime').value,photoPlate:photoPlate?('localphoto:'+localId+':plate'):'',photoOdo:photoOdo?('localphoto:'+localId+':odo'):'',photoPump:photoPump?('localphoto:'+localId+':pump'):'',photoPlateName:photoPlate?.name||'',photoOdoName:photoOdo?.name||'',photoPumpName:photoPump?.name||'',photoCount:[photoPlate,photoOdo,photoPump].filter(Boolean).length};
    const photoJobs=[[photoPlate,'plate'],[photoOdo,'odo'],[photoPump,'pump']].filter(x=>x[0]).map(x=>saveLocalPhoto(localId+':'+x[1],x[0]));
    await Promise.all(photoJobs);
    let arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
    arr.push(o);
    localStorage.setItem('costalogAbastecimentos',JSON.stringify(arr));
-   allRows.push({...o,id:'local-'+Date.now()});
+   if(!JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]').some(x=>String(x.id)===localId))throw new Error('Não foi possível confirmar o registro salvo');
+   allRows.push({...o,id:localId});
    verificationStatus('success','Tudo certo com o seu registro');
    await new Promise(r=>setTimeout(r,1200));
    modal(false);
@@ -153,12 +154,12 @@ async function save(e){
 }
 async function login(e){e.preventDefault();let h=await sha($('accessPassword').value),role=h===PASS.admin?'admin':h===PASS.user?'user':'';if(!role){$('loginError').textContent='Senha incorreta. Verifique os dados e tente novamente.';return}$('loginError').textContent='';sessionStorage.setItem('costalogAuth','1');sessionStorage.setItem('costalogRole',role);applyRoleUI();$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');load().catch(err=>{$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>Confira o arquivo CSV no repositório.</span>';console.error(err)})}
 function theme(){let d=localStorage.getItem('costalogTheme')==='dark';document.body.classList.toggle('dark-mode',d);const b=$('themeToggle');if(b)b.textContent=d?'☀':'☾';renderSettings?.()}
-$('loginForm').addEventListener('submit',login);$('togglePassword').onclick=()=>{$('accessPassword').type=$('accessPassword').type==='password'?'text':'password'};$('logoutBtn').onclick=()=>{sessionStorage.removeItem('costalogAuth');location.reload()};$('themeToggle').onclick=()=>{localStorage.setItem('costalogTheme',document.body.classList.contains('dark-mode')?'light':'dark');theme()};
+$('loginForm').addEventListener('submit',login);$('togglePassword').onclick=()=>{$('accessPassword').type=$('accessPassword').type==='password'?'text':'password'};$('logoutBtn').onclick=()=>{sessionStorage.removeItem('costalogAuth');sessionStorage.removeItem('costalogRole');location.reload()};$('themeToggle').onclick=()=>{localStorage.setItem('costalogTheme',document.body.classList.contains('dark-mode')?'light':'dark');theme()};
 document.addEventListener('click',e=>{const dl=e.target.closest('[data-local-download]');if(dl){e.preventDefault();downloadLocalPhoto(dl.dataset.localDownload,dl.dataset.photoTitle);return}let v=e.target.closest('[data-view]');if(v)view(v.dataset.view);if(e.target.closest('[data-close]'))modal(false);if(e.target.closest('#newEntryBtn,#historyNewBtn'))modal(true);let p=e.target.closest('[data-page]');if(p&&!p.disabled){currentPage=+p.dataset.page;history()}});
 $('entryForm').onsubmit=save;setupPhotoInputs();theme();
 (function(){let c=$('matrixLayer'),x=c.getContext('2d'),w,h,d;function z(){w=c.width=innerWidth;h=c.height=innerHeight;d=Array(Math.ceil(w/18)).fill(1)}function f(){x.clearRect(0,0,w,h);x.fillStyle='rgba(0,0,0,.4)';x.font='12px monospace';d.forEach((y,i)=>{x.fillText(Math.random()>.5?'1':'0',i*18,y*18);if(y*18>h&&Math.random()>.975)d[i]=0;d[i]++});requestAnimationFrame(f)}z();addEventListener('resize',z);f()})();
 theme();
-if(sessionStorage.getItem('costalogAuth')){$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');applyRoleUI();load().catch(console.error)}
+if(sessionStorage.getItem('costalogAuth')&&sessionStorage.getItem('costalogRole')){$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');applyRoleUI();load().catch(console.error)}else{sessionStorage.removeItem('costalogAuth');sessionStorage.removeItem('costalogRole')}
 
 
 /* Páginas complementares: Perguntas, Respostas e Configurações */
@@ -330,7 +331,7 @@ function photoHref(v){return photoSource(v).view}
 function isImageValue(v){return photoSource(v).kind!=='none'&&photoSource(v).kind!=='name'}
 async function downloadLocalPhoto(value,title){
  const rec=await getLocalPhoto(String(value||'').slice(10));
- if(!rec?.blob){alert('A foto não está disponível neste navegador. O registro não será tratado como salvo até que a foto seja armazenada corretamente.');return false}
+ if(!rec){alert('A foto salva não pôde ser recuperada. O sistema não encontrou a cópia armazenada.');return false}
  const url=rec.dataUrl||URL.createObjectURL(rec.blob);
  const a=document.createElement('a');a.href=url;a.download=rec.name||((title||'foto-abastecimento').toLowerCase().replace(/[^a-z0-9]+/gi,'-')+'.jpg');document.body.appendChild(a);a.click();a.remove();
  if(url.startsWith('blob:'))setTimeout(()=>URL.revokeObjectURL(url),10000);
