@@ -93,19 +93,19 @@ function renderList(id,groups,limit=12){
 }
 function photoHref(v){
  const s=String(v||'').trim();if(!s)return '';
- if(/^https?:\\/\\//i.test(s))return s;
- const m=s.match(/(?:drive\\.google\\.com\\/(?:open\\?id=|file\\/d\\/))([A-Za-z0-9_-]+)/i);
+ if(/^https?:\/\//i.test(s))return s;
+ const m=s.match(/(?:drive\.google\.com\/(?:open\?id=|file\/d\/))([A-Za-z0-9_-]+)/i);
  return m?'https://drive.google.com/file/d/'+m[1]+'/view':'';
 }
 function renderFiles(id,rows,key,moreId){
  const vals=[...new Set(rows.map(r=>String(r[key]||'').trim()).filter(Boolean))],el=$(id);if(!el)return;
- el.innerHTML=vals.slice(0,12).map((v,i)=>{const href=photoHref(v),img=/\\.(?:jpg|jpeg|png|webp|gif)(?:\\?|$)/i.test(v);return '<div class="file-item '+(href?'is-link':'')+'">'+(img&&href?'<img src="'+esc(v)+'" alt="Evidência" loading="lazy">':'<span class="file-icon">▣</span>')+'<div><strong>Evidência '+fmt(i+1)+'</strong><small>'+esc(v)+'</small></div>'+(href?'<a class="file-open" href="'+esc(href)+'" target="_blank" rel="noopener">Abrir ↗</a>':'<span class="file-open disabled">Arquivo</span>')+'</div>'}).join('')||'<div class="no-results">Nenhuma evidência registrada nesta pergunta.</div>';
+ el.innerHTML=vals.slice(0,12).map((v,i)=>{const href=photoHref(v),img=/\.(?:jpg|jpeg|png|webp|gif)(?:\?|$)/i.test(v);return '<div class="file-item '+(href?'is-link':'')+'">'+(img&&href?'<img src="'+esc(v)+'" alt="Evidência" loading="lazy">':'<span class="file-icon">▣</span>')+'<div><strong>Evidência '+fmt(i+1)+'</strong><small>'+esc(v)+'</small></div>'+(href?'<a class="file-open" href="'+esc(href)+'" target="_blank" rel="noopener">Abrir ↗</a>':'<span class="file-open disabled">Arquivo</span>')+'</div>'}).join('')||'<div class="no-results">Nenhuma evidência registrada nesta pergunta.</div>';
  const more=$(moreId);if(more){more.textContent=vals.length>12?'Ver mais '+fmt(vals.length-12)+' arquivos':' ';more.onclick=()=>showPhotoList(key,vals)}
 }
 function showPhotoList(key,vals){
  const title=key==='photoPlate'?'Foto - Placa':key==='photoOdo'?'Foto - Hodômetro':'Foto - bomba';
  $('answerDetailTitle').textContent=title;$('answerDetailSubtitle').textContent=fmt(vals.length)+' evidências encontradas';
- $('answerDetailBody').innerHTML='<div class="photo-gallery">'+vals.map((v,i)=>{const href=photoHref(v),img=/\\.(?:jpg|jpeg|png|webp|gif)(?:\\?|$)/i.test(v);return '<div class="gallery-item">'+(img&&href?'<img src="'+esc(v)+'" alt="'+esc(title)+' '+fmt(i+1)+'">':'<div class="gallery-file">▣</div>')+'<div><strong>'+esc(title)+' '+fmt(i+1)+'</strong><small>'+esc(v)+'</small></div>'+(href?'<a href="'+esc(href)+'" target="_blank" rel="noopener">Abrir evidência ↗</a>':'<span>Arquivo registrado</span>')+'</div>'}).join('')+'</div>';
+ $('answerDetailBody').innerHTML='<div class="photo-gallery">'+vals.map((v,i)=>{const href=photoHref(v),img=/\.(?:jpg|jpeg|png|webp|gif)(?:\?|$)/i.test(v);return '<div class="gallery-item">'+(img&&href?'<img src="'+esc(v)+'" alt="'+esc(title)+' '+fmt(i+1)+'">':'<div class="gallery-file">▣</div>')+'<div><strong>'+esc(title)+' '+fmt(i+1)+'</strong><small>'+esc(v)+'</small></div>'+(href?'<a href="'+esc(href)+'" target="_blank" rel="noopener">Abrir evidência ↗</a>':'<span>Arquivo registrado</span>')+'</div>'}).join('')+'</div>';
  $('answerDetailModal').classList.remove('hidden');
 }
 function renderAnswerSummary(){
