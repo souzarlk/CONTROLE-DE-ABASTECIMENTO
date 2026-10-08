@@ -1,5 +1,5 @@
 const DATA_URL='CONTROLE%20DE%20ABASTECIMENTO%20-%20POSTO%20COSTALOG%20-%20INTERNO%20-%2028042025.csv.zip';
-const PASS={admin:'6414b877f3b53d65c4a4596d3eed8b6b7532e971a1b8bc3a05024f53dafcbef8',user:'b8fa4b66429e97aaf969dd5aca1d931b38f341911bd33c5ee91f492da4ae235e'};
+const PASS={admin:'9361a23a10bd87d0fb1eb6e12190a4750da8a932405bc44ae98c692475e14b79'};
 let allRows=[],filteredRows=[],currentPage=1,pageSize=20;
 let notificationItems=[],notificationSeenIds=new Set(),liveRefreshTimer=null;
 const $=id=>document.getElementById(id);
@@ -169,8 +169,12 @@ async function save(e){
    if(btn){btn.disabled=false;btn.textContent=btn.dataset.originalText||'✓ Registrar abastecimento'}
  }
 }
-async function login(e){e.preventDefault();let h=await sha($('accessPassword').value),role=h===PASS.admin?'admin':h===PASS.user?'user':'';if(!role){$('loginError').textContent='Senha incorreta. Verifique os dados e tente novamente.';return}$('loginError').textContent='';sessionStorage.setItem('costalogAuth','1');sessionStorage.setItem('costalogRole',role);applyRoleUI();$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');load().catch(err=>{$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>Confira o arquivo CSV no repositório.</span>';console.error(err)})}
+async function enterPortal(role){sessionStorage.setItem('costalogAuth','1');sessionStorage.setItem('costalogRole',role);$('loginError').textContent='';applyRoleUI();$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');load().catch(err=>{$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>Confira o arquivo CSV no repositório.</span>';console.error(err)})}
+async function login(e){e.preventDefault();const h=await sha($('accessPassword').value);if(h!==PASS.admin){$('loginError').textContent='Senha incorreta. Verifique a senha do painel e tente novamente.';return}await enterPortal('admin')}
 function theme(){let d=localStorage.getItem('costalogTheme')==='dark';document.body.classList.toggle('dark-mode',d);const b=$('themeToggle');if(b)b.textContent=d?'☀':'☾';renderSettings?.()}
+$('userAccessBtn').onclick=()=>enterPortal('user');
+$('adminAccessBtn').onclick=()=>{ $('loginChoice').classList.add('hidden'); $('loginForm').classList.remove('hidden'); $('accessPassword').focus(); };
+$('loginBackBtn').onclick=()=>{ $('loginForm').classList.add('hidden'); $('loginChoice').classList.remove('hidden'); $('accessPassword').value=''; $('loginError').textContent=''; };
 $('loginForm').addEventListener('submit',login);$('togglePassword').onclick=()=>{$('accessPassword').type=$('accessPassword').type==='password'?'text':'password'};$('logoutBtn').onclick=()=>{sessionStorage.removeItem('costalogAuth');sessionStorage.removeItem('costalogRole');location.reload()};$('themeToggle').onclick=()=>{localStorage.setItem('costalogTheme',document.body.classList.contains('dark-mode')?'light':'dark');theme()};
 document.addEventListener('click',e=>{const dl=e.target.closest('[data-local-download]');if(dl){e.preventDefault();downloadLocalPhoto(dl.dataset.localDownload,dl.dataset.photoTitle);return}let v=e.target.closest('[data-view]');if(v)view(v.dataset.view);if(e.target.closest('[data-close]'))modal(false);if(e.target.closest('#newEntryBtn,#historyNewBtn'))modal(true);let p=e.target.closest('[data-page]');if(p&&!p.disabled){currentPage=+p.dataset.page;history()}});
 $('entryForm').onsubmit=save;setupPhotoInputs();theme();
