@@ -512,3 +512,19 @@ body.dark-mode{--black:#f5f5f5;--gray-300:#444;--gray-500:#aaa;--shadow:0 18px 5
  .receipt-modal-actions .primary-btn{width:100%}
  .notification-toast{right:16px;bottom:16px}
 }
+
+
+.login-choice{display:grid;gap:12px;margin-top:22px}
+.login-choice-btn{width:100%;display:grid;grid-template-columns:38px 1fr 22px;align-items:center;gap:12px;padding:15px 16px;border:1px solid #e0e2e5;border-radius:13px;background:#fff;text-align:left;cursor:pointer;transition:.2s ease;box-shadow:0 5px 18px rgba(0,0,0,.05)}
+.login-choice-btn:hover{transform:translateY(-1px);border-color:#e30613;box-shadow:0 9px 24px rgba(227,6,19,.12)}
+.login-choice-btn strong{display:block;font-size:12px;color:#202428}
+.login-choice-btn small{display:block;margin-top:3px;font-size:9px;color:#737b82}
+.login-choice-btn b{font-size:20px;color:#e30613;text-align:right}
+.login-choice-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#fff0f1;color:#e30613;font-weight:900}
+.login-choice-admin .login-choice-icon{background:#202124;color:#fff}
+.login-back-btn{display:block;margin:11px auto 0;border:0;background:transparent;color:#6d747b;font-size:10px;font-weight:800;cursor:pointer}
+.login-back-btn:hover{color:#e30613}
+.dark-mode .login-choice-btn{background:#18181c;border-color:#36363d}
+.dark-mode .login-choice-btn strong{color:#f5f5f6}
+.dark-mode .login-choice-btn small{color:#a4a4ad}
+.dark-mode .login-back-btn{color:#aaa}
