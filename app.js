@@ -321,7 +321,7 @@ async function saveLocalPhoto(key,file){
 }
 async function getLocalPhoto(key){
  try{const db=await openPhotoDB();const value=await new Promise((res,rej)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(key);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});db.close();if(value?.blob)return value}catch(e){console.warn('IndexedDB indisponível:',e)}
- const parts=String(key).split(':');const id=parts.slice(0,2).join(':'),kind=parts[2];
+ const parts=String(key).split(':'),id=parts[0],kind=parts[1];
  const row=allRows.find(r=>String(r.id)===id)||JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]').find(r=>String(r.id)===id);
  if(row){const field=kind==='plate'?'photoPlateData':kind==='odo'?'photoOdoData':'photoPumpData';const data=row[field];if(data)return {dataUrl:data,name:row[kind==='plate'?'photoPlateName':kind==='odo'?'photoOdoName':'photoPumpName']||'foto.jpg',type:'image/jpeg'}}
  return null;
