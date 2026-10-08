@@ -27,7 +27,7 @@ function fmt(n,d=0){return new Intl.NumberFormat('pt-BR',{maximumFractionDigits:
 function br(d){if(!d)return'—';let p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
 function dt(o){return br(o.date)+' '+(o.time||'')}
 async function sha(s){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('')}
-async function load(){try{const r=await fetch(DATA_URL+'?v=20261007',{cache:'no-store'});if(!r.ok)throw Error('Arquivo ZIP não encontrado ('+r.status+')');const zip=await JSZip.loadAsync(await r.arrayBuffer());const files=Object.keys(zip.files).filter(k=>/\.csv$/i.test(k)&&!zip.files[k].dir);if(!files.length)throw Error('CSV não encontrado no ZIP');const textCsv=await zip.files[files[0]].async('string');allRows=normalize(csv(textCsv));const local=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');allRows.push(...local.map((x,i)=>({...x,id:x.id||('local-'+i),plate:String(x.plate||x.Placa||'').toUpperCase().replace(/[ -]/g,'')})));renderAll();if(typeof populateQuestionOptions==='function')populateQuestionOptions();$('loading').classList.add('hidden');initializeLiveResponses();const savedView=sessionStorage.getItem('costalogCurrentView')||'questions';view(savedView)}catch(err){console.error('Erro ao carregar base:',err);$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>'+esc(err.message)+'</span><button class="secondary-btn" onclick="location.reload()">Tentar novamente</button>'}}
+async function load(){try{const r=await fetch(DATA_URL+'?v=20261007',{cache:'no-store'});if(!r.ok)throw Error('Arquivo ZIP não encontrado ('+r.status+')');const zip=await JSZip.loadAsync(await r.arrayBuffer());const files=Object.keys(zip.files).filter(k=>/\.csv$/i.test(k)&&!zip.files[k].dir);if(!files.length)throw Error('CSV não encontrado no ZIP');const textCsv=await zip.files[files[0]].async('string');allRows=normalize(csv(textCsv));const local=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');const deleted=JSON.parse(localStorage.getItem('costalogDeletedAnswers')||'[]');const deletedSet=new Set(deleted.map(String));allRows.push(...local.filter(x=>!deletedSet.has(String(x.id||x.localId||''))).map((x,i)=>({...x,id:x.id||('local-'+i),plate:String(x.plate||x.Placa||'').toUpperCase().replace(/[ -]/g,'')})));renderAll();if(typeof populateQuestionOptions==='function')populateQuestionOptions();$('loading').classList.add('hidden');initializeLiveResponses();const savedView=sessionStorage.getItem('costalogCurrentView')||'questions';view(savedView)}catch(err){console.error('Erro ao carregar base:',err);$('loading').innerHTML='<strong>Não foi possível carregar a base.</strong><span>'+esc(err.message)+'</span><button class="secondary-btn" onclick="location.reload()">Tentar novamente</button>'}}
 function renderAll(){renderSettings();renderQuestions()}
 function stats(){let ls=allRows.reduce((a,r)=>a+r.liters,0),od=allRows.filter(r=>r.odo).map(r=>r.odo),dates=[...allRows].sort((a,b)=>a.date.localeCompare(b.date)),last=[...allRows].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time))[0];$('statRecords').textContent=fmt(allRows.length);$('statLiters').textContent=fmt(ls,0)+' L';$('statVehicles').textContent=fmt(new Set(allRows.map(r=>r.plate)).size);$('statOdo').textContent=fmt(od.reduce((a,b)=>a+b,0)/(od.length||1),0)+' km';$('statLast').textContent=last?br(last.date):'—';$('periodLabel').textContent=dates.length?br(dates[0].date)+' — '+br(last.date):'—'}
 function chart(){let m={};allRows.forEach(r=>{let k=r.date.slice(0,7);if(k)m[k]=(m[k]||0)+r.liters});let ks=Object.keys(m).sort().slice(-12),mx=Math.max(...ks.map(k=>m[k]),1);$('monthChart').innerHTML=ks.map(k=>{let [y,n]=k.split('-');let lab=new Date(+y,+n-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','');return '<div class="bar-item"><b>'+fmt(m[k],0)+' L</b><i style="height:'+Math.max(8,m[k]/mx*145)+'px"></i><small>'+lab+'</small></div>'}).join('')}
@@ -525,7 +525,7 @@ function checkLiveResponses(){
 }
 function setupLiveNotificationEvents(){
  window.addEventListener('storage',e=>{if(e.key==='costalogAbastecimentos'&&isAdmin())checkLiveResponses()});
- document.addEventListener('click',e=>{const close=e.target.closest('[data-notification-close]');if(close){$('notificationToast')?.classList.add('hidden');return}if(e.target.closest('#notificationBtn')){$('notificationPanel')?.classList.toggle('hidden');return}if(e.target.closest('#clearNotifications')){notificationItems=[];renderNotifications();return}});
+ document.addEventListener('click',e=>{const close=e.target.closest('[data-notification-close]');if(close){$('notificationToast')?.classList.add('hidden');$('notificationPanel')?.classList.add('hidden');return}if(e.target.closest('#notificationBtn')){$('notificationPanel')?.classList.toggle('hidden');return}if(e.target.closest('#clearNotifications')){$('notificationPanel')?.classList.add('hidden');notificationItems=[];renderNotifications();return}});
 }
 
 function setupExtraPages(){
@@ -547,18 +547,26 @@ function deleteAnswer(id){
  if(!target.startsWith('local-')){alert('Este registro pertence à base histórica e não pode ser excluído pelo portal.');return}
  if(!confirm('Excluir definitivamente esta resposta e as fotos anexadas?'))return;
  try{
-   const arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
-   const kept=arr.filter(r=>String(r.id||r.localId||'')!==target&&String(r.localId||'')!==target);
-   localStorage.setItem('costalogAbastecimentos',JSON.stringify(kept));
+   let deleted=JSON.parse(localStorage.getItem('costalogDeletedAnswers')||'[]');
+   if(!deleted.includes(target))deleted.push(target);
+   localStorage.setItem('costalogDeletedAnswers',JSON.stringify(deleted));
+   let arr=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
+   arr=arr.filter(r=>String(r.id||r.localId||'')!==target);
+   localStorage.setItem('costalogAbastecimentos',JSON.stringify(arr));
+   const verify=JSON.parse(localStorage.getItem('costalogAbastecimentos')||'[]');
+   if(verify.some(r=>String(r.id||r.localId||'')===target))throw new Error('O registro ainda está presente no armazenamento local');
    ['plate','odo','pump'].forEach(k=>{
      localStorage.removeItem('costalogPhotoBackup:'+target+':'+k);
-     try{openPhotoDB().then(db=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(target+':'+k);tx.oncomplete=()=>db.close();tx.onerror=()=>db.close()}).catch(()=>{})}catch(e){}
+     openPhotoDB().then(db=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(target+':'+k);tx.oncomplete=()=>db.close();tx.onerror=()=>db.close()}).catch(()=>{});
    });
    allRows=allRows.filter(r=>String(r.id)!==target);
-   notificationItems=notificationItems.filter(n=>n.id!==target);
-   renderAnswers();applyRoleUI();
+   notificationItems=notificationItems.filter(n=>String(n.id)!==target);
+   renderAnswers();renderSettings();applyRoleUI();
    if($('answerDetailModal'))$('answerDetailModal').classList.add('hidden');
- }catch(err){console.error('Falha ao excluir resposta:',err);alert('Não foi possível excluir a resposta.')}
+ }catch(err){
+   console.error('Falha ao excluir resposta:',err);
+   alert('Não foi possível excluir a resposta: '+(err.message||'erro desconhecido'));
+ }
 }
 function renderSettings(){const r=$('settingsRecords');if(r)r.textContent=fmt(allRows.length);const d=$('settingDark');if(d)d.checked=document.body.classList.contains('dark-mode');const a=$('settingAuto');if(a)a.checked=localStorage.getItem('costalogAutoRefresh')!=='0';const an=$('settingAnti');if(an)an.checked=localStorage.getItem('costalogAlertAnti')!=='0';const vo=$('settingVolume');if(vo)vo.checked=localStorage.getItem('costalogAlertVolume')!=='0'}
 const originalView=view;view=function(v){originalView(v)};
