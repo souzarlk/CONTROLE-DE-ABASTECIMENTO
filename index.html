@@ -215,21 +215,21 @@
 <div class="form-section-title"><span>02</span><div><strong>Identificação do veículo</strong><small>Placa e evidências visuais.</small></div></div>
 <div class="form-grid">
 <div class="field"><label>Placa <b>*</b></label><input id="entryPlate" list="plateOptions" autocomplete="off" required placeholder="ABC1D23" maxlength="7" inputmode="text"><datalist id="plateOptions"></datalist><small>Digite sem traço e sem espaço.</small><div id="plateFeedback" class="field-feedback"></div></div>
-<div class="field"><label>Foto — Placa</label><input id="entryPhotoPlate" class="photo-input" type="file" accept="image/*" capture="environment"><div id="photoPlatePreview" class="photo-preview"></div></div>
+<div class="field"><label>Foto — Placa</label><input id="entryPhotoPlate" class="photo-input" type="file" accept="image/*" capture="environment"><div class="photo-actions"><button type="button" class="photo-action file-action" data-photo-trigger="entryPhotoPlate">Escolher arquivo</button><button type="button" class="photo-action camera-action" data-photo-camera="entryPhotoPlate">▣ Tirar foto</button></div><div id="photoPlatePreview" class="photo-preview"></div></div>
 </div>
 <div class="form-section-title"><span>03</span><div><strong>Abastecimento e conferência</strong><small>Valores que serão usados nos indicadores.</small></div></div>
 <div class="form-grid">
 <div class="field"><label>Hodômetro <b>*</b></label><input id="entryOdo" type="number" min="0" step="1" required placeholder="Ex.: 245680"><small id="odoHint">Digite com muita atenção o hodômetro.</small><div id="odoFeedback" class="field-feedback"></div></div>
-<div class="field"><label>Foto — Hodômetro</label><input id="entryPhotoOdo" class="photo-input" type="file" accept="image/*" capture="environment"><div id="photoOdoPreview" class="photo-preview"></div></div>
+<div class="field"><label>Foto — Hodômetro</label><input id="entryPhotoOdo" class="photo-input" type="file" accept="image/*" capture="environment"><div class="photo-actions"><button type="button" class="photo-action file-action" data-photo-trigger="entryPhotoOdo">Escolher arquivo</button><button type="button" class="photo-action camera-action" data-photo-camera="entryPhotoOdo">▣ Tirar foto</button></div><div id="photoOdoPreview" class="photo-preview"></div></div>
 <div class="field"><label>Qtd. — Litros <b>*</b></label><input id="entryLiters" type="number" min="0.01" step="0.01" required placeholder="Ex.: 320,00"><small>Informe quantos litros foram abastecidos.</small><div id="litersFeedback" class="field-feedback"></div></div>
-<div class="field"><label>Foto — Bomba</label><input id="entryPhotoPump" class="photo-input" type="file" accept="image/*" capture="environment"><div id="photoPumpPreview" class="photo-preview"></div></div>
+<div class="field"><label>Foto — Bomba</label><input id="entryPhotoPump" class="photo-input" type="file" accept="image/*" capture="environment"><div class="photo-actions"><button type="button" class="photo-action file-action" data-photo-trigger="entryPhotoPump">Escolher arquivo</button><button type="button" class="photo-action camera-action" data-photo-camera="entryPhotoPump">▣ Tirar foto</button></div><div id="photoPumpPreview" class="photo-preview"></div></div>
 </div>
 <div class="form-section-title"><span>04</span><div><strong>Segurança do tanque</strong><small>Informações obrigatórias do formulário original.</small></div></div>
 <div class="form-grid">
 <div class="field"><label>Possui Antifurto? <b>*</b></label><select id="entryAnti" required><option value="">Selecione uma opção</option><option>Sim - ok</option><option>Sim - Apresenta danos</option><option>Não</option></select></div>
 <div class="field"><label>Quantos tanques o veículo possui? <b>*</b></label><select id="entryTanks" required><option value="">Selecione</option><option>1</option><option>2</option></select></div>
 </div>
-<div id="entryValidation" class="validation-box hidden"></div>
+<div id="entryValidation" class="validation-box hidden"></div><div id="entryVerification" class="entry-verification hidden" aria-live="polite"><div class="verification-track"><span id="verificationBar"></span></div><div class="verification-status"><span id="verificationIcon">◌</span><strong id="verificationText">Verificando seu registro...</strong></div></div>
 <div class="notice"><strong>Importante:</strong> este registro é salvo localmente neste navegador. A base histórica do Driver permanece somente para consulta; os novos registros não são compartilhados automaticamente com outros computadores até conectarmos uma base central.</div>
 <div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancelar</button><button class="primary-btn save-entry-btn" type="submit">✓ Registrar abastecimento</button></div>
 </form></div></div>
