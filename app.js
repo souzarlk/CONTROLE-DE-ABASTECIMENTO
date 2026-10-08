@@ -35,7 +35,38 @@ if(sessionStorage.getItem('costalogAuth')){$('loginScreen').classList.add('hidde
 
 /* Páginas complementares: Perguntas, Respostas e Configurações */
 function renderQuestions(){const b=$('questionsNewBtn');if(b)b.onclick=()=>modal(true)}
-function renderAnswers(){if(!$('answersBody'))return;const q=($('answerSearch')?.value||'').trim().toUpperCase();const rows=allRows.filter(r=>!q||[r.date,r.time,r.employee,r.plate,String(r.liters),String(r.odo),r['Possuí Antifurto?'],r['Quantos tanque o veículo possui?']].join(' ').toUpperCase().includes(q)).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));const alerts=rows.filter(r=>!/Sim - ok/i.test(r['Possuí Antifurto?']||'')||r.liters>800).length;$('answerTotal').textContent=fmt(rows.length);$('answerLiters').textContent=fmt(rows.reduce((s,r)=>s+r.liters,0),0)+' L';$('answerVehicles').textContent=fmt(new Set(rows.map(r=>r.plate)).size);$('answerAlerts').textContent=fmt(alerts);$('answersBody').innerHTML=rows.slice(0,500).map((r,i)=>{const photos=[r.photoPlate,r.photoOdo,r.photoPump].filter(Boolean).length;return '<tr><td>'+fmt(i+1)+'</td><td>'+br(r.date)+'</td><td>'+esc(r.time)+'</td><td><strong>'+esc(r.employee)+'</strong></td><td><span class="plate-chip">'+esc(r.plate)+'</span></td><td><strong>'+fmt(r.liters,2)+' L</strong></td><td>'+fmt(r.odo)+' km</td><td><span class="status-dot '+(/Sim - ok/i.test(r['Possuí Antifurto?'])?'ok':'warn')+'">'+esc(r['Possuí Antifurto?']||'—')+'</span></td><td>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</td><td>'+(photos?'<span class="evidence-badge">📷 '+photos+'</span>':'—')+'</td></tr>'}).join('')||'<tr><td colspan="10" class="no-results">Nenhuma resposta encontrada.</td></tr>'}
+function filteredAnswerRows(){
+ const q=($('answerSearch')?.value||'').trim().toUpperCase();
+ const from=$('answerDateFrom')?.value||'',to=$('answerDateTo')?.value||'',emp=$('answerEmployee')?.value||'',plate=$('answerPlate')?.value||'',anti=$('answerAnti')?.value||'';
+ return allRows.filter(r=>{
+   const hay=[r.date,r.time,r.employee,r.plate,String(r.liters),String(r.odo),r['Possuí Antifurto?'],r['Quantos tanque o veículo possui?']].join(' ').toUpperCase();
+   return (!q||hay.includes(q))&&(!from||r.date>=from)&&(!to||r.date<=to)&&(!emp||r.employee===emp)&&(!plate||r.plate===plate)&&(!anti||r['Possuí Antifurto?']===anti);
+ }).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+}
+function renderAnswerFilterOptions(){
+ const es=[...new Set(allRows.map(r=>r.employee).filter(Boolean))].sort(),ps=[...new Set(allRows.map(r=>r.plate).filter(Boolean))].sort();
+ if($('answerEmployee')){const v=$('answerEmployee').value;$('answerEmployee').innerHTML='<option value="">Todos os funcionários</option>'+es.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');$('answerEmployee').value=v}
+ if($('answerPlate')){const v=$('answerPlate').value;$('answerPlate').innerHTML='<option value="">Todos os veículos</option>'+ps.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');$('answerPlate').value=v}
+}
+function renderAnswers(){
+ if(!$('answersBody'))return;
+ renderAnswerFilterOptions();
+ const rows=filteredAnswerRows(),alerts=rows.filter(r=>!/Sim - ok/i.test(r['Possuí Antifurto?']||'')||r.liters>800).length;
+ $('answerTotal').textContent=fmt(rows.length);$('answerLiters').textContent=fmt(rows.reduce((s,r)=>s+r.liters,0),2)+' L';$('answerVehicles').textContent=fmt(new Set(rows.map(r=>r.plate)).size);$('answerAlerts').textContent=fmt(alerts);
+ $('answerFilterSummary').textContent=rows.length+' registro'+(rows.length===1?'':'s')+' encontrado'+(rows.length===1?'':'s');
+ const body=rows.slice(0,500).map((r,i)=>{const photos=[r.photoPlate,r.photoOdo,r.photoPump].filter(Boolean).length;const alert=!/Sim - ok/i.test(r['Possuí Antifurto?']||'')||r.liters>800;return '<tr class="answer-row" data-answer-id="'+esc(String(r.id))+'"><td class="row-number">'+fmt(i+1)+'</td><td><strong>'+br(r.date)+'</strong></td><td>'+esc(r.time||'—')+'</td><td><strong>'+esc(r.employee||'—')+'</strong></td><td><span class="plate-chip">'+esc(r.plate||'—')+'</span></td><td><strong>'+fmt(r.liters,2)+' L</strong></td><td>'+fmt(r.odo)+' km</td><td><span class="status-dot '+(/Sim - ok/i.test(r['Possuí Antifurto?']||'')?'ok':'warn')+'">'+esc(r['Possuí Antifurto?']||'—')+'</span></td><td>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</td><td>'+(photos?'<span class="evidence-badge">📷 '+photos+'</span>':'<span class="evidence-empty">—</span>')+(alert?'<span class="row-alert">!</span>':'')+'</td></tr>'}).join('');
+ $('answersBody').innerHTML=body||'<tr><td colspan="10" class="no-results"><div>⌕</div><strong>Nenhuma resposta encontrada</strong><span>Tente remover algum filtro ou alterar a pesquisa.</span></td></tr>';
+ $('answerLastUpdate').textContent='Base atualizada • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function showAnswerDetail(id){
+ const r=allRows.find(x=>String(x.id)===String(id));if(!r)return;
+ $('answerDetailTitle').textContent=(r.plate||'Abastecimento')+' • '+br(r.date);
+ $('answerDetailSubtitle').textContent=(r.employee||'Funcionário não informado')+' • '+(r.time||'Horário não informado');
+ const photos=[['Foto da placa',r.photoPlate],['Foto do hodômetro',r.photoOdo],['Foto da bomba',r.photoPump]];
+ $('answerDetailBody').innerHTML='<div class="detail-summary"><div><small>DATA E HORA</small><strong>'+br(r.date)+' • '+esc(r.time||'—')+'</strong></div><div><small>FUNCIONÁRIO</small><strong>'+esc(r.employee||'—')+'</strong></div><div><small>PLACA</small><strong class="plate-chip">'+esc(r.plate||'—')+'</strong></div></div><div class="detail-grid"><div><span>Hodômetro</span><strong>'+fmt(r.odo)+' km</strong></div><div><span>Quantidade abastecida</span><strong>'+fmt(r.liters,2)+' L</strong></div><div><span>Antifurto</span><strong>'+esc(r['Possuí Antifurto?']||'—')+'</strong></div><div><span>Quantidade de tanques</span><strong>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</strong></div></div><div class="detail-evidence"><h3>Evidências</h3><div class="evidence-grid">'+photos.map(([label,url])=>url?'<a class="evidence-card" href="'+esc(url)+'" target="_blank" rel="noopener"><span>📷</span><div><strong>'+label+'</strong><small>Ver evidência</small></div></a>':'<div class="evidence-card empty"><span>—</span><div><strong>'+label+'</strong><small>Não disponível</small></div></div>').join('')+'</div></div>';
+ $('answerDetailModal').classList.remove('hidden');
+}
+
 function exportAnswers(){
  const rows=allRows.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
  const head=['DATA','HORA','FUNCIONÁRIO','Placa','Qtd - Litros','Hodômetro','Possuí Antifurto?','Quantos tanque o veículo possui?','Foto - Placa','Foto - Hodômetro','Foto - bomba'];
@@ -50,8 +81,12 @@ function updateOdoAutomation(){const p=($('entryPlate')?.value||'').toUpperCase(
 function updateLitersAutomation(){const v=+($('entryLiters')?.value||0),f=$('litersFeedback');if(!f)return;if(v>800){f.className='field-feedback warn';f.textContent='⚠ Volume acima de 800 L: será marcado para conferência'}else if(v){f.className='field-feedback ok';f.textContent='✓ '+fmt(v,2)+' L informado'}else f.textContent=''}
 function previewPhoto(inputId,previewId){const i=$(inputId),p=$(previewId);if(!i||!p)return;i.addEventListener('change',()=>{p.innerHTML='';const file=i.files?.[0];if(!file)return;const img=document.createElement('img');img.src=URL.createObjectURL(file);img.alt='Pré-visualização';p.appendChild(img);const s=document.createElement('span');s.textContent=file.name;p.appendChild(s)})}
 function setupExtraPages(){
- ['answerSearch'].forEach(id=>$(id)?.addEventListener('input',renderAnswers));
+ ['answerSearch','answerDateFrom','answerDateTo','answerEmployee','answerPlate','answerAnti'].forEach(id=>$(id)?.addEventListener('input',renderAnswers));
  $('refreshAnswers')?.addEventListener('click',renderAnswers);
+ $('exportAnswersBtn')?.addEventListener('click',exportAnswers);
+ $('clearAnswerFilters')?.addEventListener('click',()=>{['answerSearch','answerDateFrom','answerDateTo'].forEach(id=>{if($(id))$(id).value=''});['answerEmployee','answerPlate','answerAnti'].forEach(id=>{if($(id))$(id).value=''});renderAnswers()});
+ $('answersBody')?.addEventListener('click',e=>{const row=e.target.closest('.answer-row');if(row)showAnswerDetail(row.dataset.answerId)});
+ document.querySelectorAll('[data-answer-close]')?.forEach(x=>x.addEventListener('click',()=>$('answerDetailModal')?.classList.add('hidden')));
  $('exportAnswersBtn')?.addEventListener('click',exportAnswers);
  $('answersNewBtn')?.addEventListener('click',()=>modal(true));
  $('questionsNewBtn')?.addEventListener('click',()=>modal(true));
