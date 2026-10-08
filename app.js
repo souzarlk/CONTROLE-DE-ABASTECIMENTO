@@ -38,7 +38,19 @@ function apply(){let q=$('searchInput').value.trim().toUpperCase(),e=$('employee
 function history(){let s=(currentPage-1)*pageSize,a=filteredRows.slice(s,s+pageSize);$('historyBody').innerHTML=a.length?a.map(r=>'<tr><td>'+dt(r)+'</td><td><strong>'+esc(r.employee)+'</strong></td><td><span class="plate-chip">'+esc(r.plate)+'</span></td><td>'+fmt(r.odo)+' km</td><td><strong>'+fmt(r.liters,2)+' L</strong></td><td><span class="status-dot '+(/Sim - ok/i.test(r['Possuí Antifurto?'])?'ok':'warn')+'">'+esc(r['Possuí Antifurto?']||'—')+'</span></td><td>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</td></tr>').join(''):'<tr><td colspan="7" class="no-results">Nenhum registro encontrado.</td></tr>';let p=Math.max(1,Math.ceil(filteredRows.length/pageSize));$('filterSummary').textContent=fmt(filteredRows.length)+' registros encontrados';$('pagination').innerHTML='<button '+(currentPage===1?'disabled':'')+' data-page="'+(currentPage-1)+'">‹</button><span>Página '+currentPage+' de '+p+'</span><button '+(currentPage===p?'disabled':'')+' data-page="'+(currentPage+1)+'">›</button>'}
 function vehicles(){let q=($('vehicleSearch')?.value||'').toUpperCase(),m={};allRows.forEach(r=>{if(q&&!r.plate.includes(q))return;m[r.plate]??={n:0,l:0,odo:0,last:r};m[r.plate].n++;m[r.plate].l+=r.liters;m[r.plate].odo=Math.max(m[r.plate].odo,r.odo);if((r.date+r.time)>(m[r.plate].last.date+m[r.plate].last.time))m[r.plate].last=r});$('vehicleGrid').innerHTML=Object.entries(m).sort((a,b)=>b[1].l-a[1].l).slice(0,120).map(([p,v])=>'<article class="vehicle-card"><div class="vehicle-head"><span class="plate-chip">'+esc(p)+'</span><span>'+fmt(v.n)+' abastecimentos</span></div><strong>'+fmt(v.l,0)+' L</strong><div class="vehicle-meta"><span>Último: '+br(v.last.date)+'</span><span>Hod.: '+fmt(v.odo)+' km</span></div></article>').join('')}
 function view(v){document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));const target=$(v+'View');if(!target)return;target.classList.remove('hidden');document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('active',x.dataset.view===v));if(v==='settings')renderSettings();if(v==='questions')renderQuestions();scrollTo({top:0,behavior:'smooth'})}
-function modal(open){if(!open)verificationReset();$('entryModal').classList.toggle('hidden',!open);if(open){verificationReset();let d=new Date();$('entryForm').reset();$('entryDate').value=d.toISOString().slice(0,10);$('entryTime').value=d.toTimeString().slice(0,5);if(typeof populateQuestionOptions==='function')populateQuestionOptions();updatePlateAutomation();updateOdoAutomation();updateLitersAutomation();['photoPlatePreview','photoOdoPreview','photoPumpPreview'].forEach(id=>{if($(id))$(id).innerHTML=''})}}
+function lastForPlate(plate){
+ const p=String(plate||'').toUpperCase().replace(/[ -]/g,'');
+ if(!p)return null;
+ const rows=allRows.filter(r=>String(r.plate||r.Placa||'').toUpperCase().replace(/[ -]/g,'')===p&&Number(r.odo||r['Hodômetro'])>0);
+ if(!rows.length)return null;
+ return rows.reduce((best,r)=>Number(r.odo||r['Hodômetro'])>Number(best.odo||best['Hodômetro'])?r:best,rows[0]);
+}
+function showEntryValidation(message,type='error'){
+ const box=$('entryValidation');if(!box)return;
+ box.className='validation-box '+type;
+ box.textContent=message;
+}
+function modal(open){if(!open)verificationReset();$('entryModal').classList.toggle('hidden',!open);if(open){verificationReset();let d=new Date();$('entryForm').reset();$('entryDate').value=d.toISOString().slice(0,10);$('entryTime').value=d.toTimeString().slice(0,5);if(typeof populateQuestionOptions==='function')populateQuestionOptions();['photoPlatePreview','photoOdoPreview','photoPumpPreview'].forEach(id=>{if($(id))$(id).innerHTML=''})}}
 function verificationReset(){
  const box=$('entryVerification'),bar=$('verificationBar'),icon=$('verificationIcon'),txt=$('verificationText');
  if(box)box.className='entry-verification hidden';
