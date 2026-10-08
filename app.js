@@ -104,19 +104,22 @@ function chartTooltip(id,index,x,y){
 function hideChartTooltip(id){$(id)?.querySelector('.chart-tooltip')?.classList.remove('show')}
 function bindDonutInteractions(id,legendId){
  const el=$(id),leg=$(legendId);if(!el||!leg)return;
+ el.dataset.pinned='false';
+ const hoverOn=(i,e)=>{focusChartSegment(id,i);if(e)chartTooltip(id,i,e.clientX,e.clientY)};
+ const hoverOff=()=>{if(el.dataset.pinned!=='true')focusChartSegment(id,-1);hideChartTooltip(id)};
  el.querySelectorAll('.donut-segment-main').forEach((seg,i)=>{
-   seg.addEventListener('mouseenter',e=>{focusChartSegment(id,i);chartTooltip(id,i,e.clientX,e.clientY)});
+   seg.addEventListener('mouseenter',e=>hoverOn(i,e));
    seg.addEventListener('mousemove',e=>chartTooltip(id,i,e.clientX,e.clientY));
-   seg.addEventListener('mouseleave',()=>hideChartTooltip(id));
-   seg.addEventListener('click',()=>focusChartSegment(id,i));
+   seg.addEventListener('mouseleave',hoverOff);
+   seg.addEventListener('click',()=>{el.dataset.pinned=el.dataset.focusIndex==String(i)?'false':'true';focusChartSegment(id,i)});
+   seg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.dataset.pinned=el.dataset.focusIndex==String(i)?'false':'true';focusChartSegment(id,i)}});
  });
  leg.querySelectorAll('.legend-item').forEach((item,i)=>{
-   item.addEventListener('mouseenter',()=>{focusChartSegment(id,i,'legend')});
-   item.addEventListener('mouseleave',()=>{if($(id)?.dataset.focusIndex===''||$(id)?.dataset.focusIndex===undefined)focusChartSegment(id,-1,'legend')});
-   item.addEventListener('click',()=>focusChartSegment(id,i,'legend'));
+   item.addEventListener('mouseenter',()=>focusChartSegment(id,i,'legend'));
+   item.addEventListener('mouseleave',()=>{if(el.dataset.pinned!=='true')focusChartSegment(id,-1,'legend')});
+   item.addEventListener('click',()=>{el.dataset.pinned=el.dataset.focusIndex==String(i)?'false':'true';focusChartSegment(id,i,'legend')});
  });
-}
-function renderDonut(id,legendId,groups,total){
+}function renderDonut(id,legendId,groups,total){
  const el=$(id),leg=$(legendId);if(!el||!leg)return;
  chartRegistry[id]={legendId,groups:groups.slice(0,10),total};
  if(!groups.length||!total){el.innerHTML='<span class="donut-center">0<small>respostas</small></span>';el.style.background='none';leg.innerHTML='<div class="chart-empty">Sem dados para exibir</div>';return}
