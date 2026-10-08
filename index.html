@@ -59,7 +59,39 @@
 </div>
 </section>
 
-<section id="answersView" class="view hidden"></section>
+<section id="answersView" class="view hidden">
+<div class="answers-head">
+  <div><span class="eyebrow red">RASTREABILIDADE</span><h2>Respostas</h2><p>Todos os abastecimentos registrados, organizados para consulta rápida, conferência e acompanhamento operacional.</p></div>
+  <div class="answers-head-actions"><button id="refreshAnswers" class="secondary-btn">↻ Atualizar</button><button id="exportAnswersBtn" class="primary-btn">↓ Exportar CSV</button></div>
+</div>
+
+<div class="answers-kpis">
+  <div class="answer-kpi"><span class="kpi-icon">#</span><div><small>REGISTROS</small><strong id="answerTotal">0</strong><em>respostas encontradas</em></div></div>
+  <div class="answer-kpi"><span class="kpi-icon">L</span><div><small>LITROS</small><strong id="answerLiters">0 L</strong><em>volume total abastecido</em></div></div>
+  <div class="answer-kpi"><span class="kpi-icon">▣</span><div><small>VEÍCULOS</small><strong id="answerVehicles">0</strong><em>placas distintas</em></div></div>
+  <div class="answer-kpi alert"><span class="kpi-icon">!</span><div><small>CONFERÊNCIA</small><strong id="answerAlerts">0</strong><em>registros para verificar</em></div></div>
+</div>
+
+<div class="answers-filter panel">
+  <div class="answers-filter-top"><div><strong>Pesquisar respostas</strong><small>Filtre por qualquer informação da resposta.</small></div><button id="clearAnswerFilters" class="filter-clear">Limpar filtros</button></div>
+  <div class="answers-filters-grid">
+    <label class="answer-filter search-filter"><span>Pesquisa geral</span><input id="answerSearch" type="search" placeholder="Funcionário, placa, data, litros..."></label>
+    <label class="answer-filter"><span>Data inicial</span><input id="answerDateFrom" type="date"></label>
+    <label class="answer-filter"><span>Data final</span><input id="answerDateTo" type="date"></label>
+    <label class="answer-filter"><span>Funcionário</span><select id="answerEmployee"><option value="">Todos os funcionários</option></select></label>
+    <label class="answer-filter"><span>Placa</span><select id="answerPlate"><option value="">Todos os veículos</option></select></label>
+    <label class="answer-filter"><span>Antifurto</span><select id="answerAnti"><option value="">Todos</option><option>Sim - ok</option><option>Sim - Apresenta danos</option><option>Não</option></select></label>
+  </div>
+  <div class="answer-filter-summary"><span id="answerFilterSummary">Exibindo todos os registros</span><span id="answerLastUpdate">Base histórica + registros locais</span></div>
+</div>
+
+<div class="answers-table-panel panel">
+  <div class="answers-table-head"><div><strong>Histórico de abastecimentos</strong><small>Selecione uma linha para abrir todos os detalhes do abastecimento.</small></div><span class="table-limit">Até 500 resultados por consulta</span></div>
+  <div class="answers-table-wrap"><table class="answers-table"><thead><tr><th>#</th><th>Data</th><th>Hora</th><th>Funcionário</th><th>Placa</th><th>Litros</th><th>Hodômetro</th><th>Antifurto</th><th>Tanques</th><th>Evidências</th></tr></thead><tbody id="answersBody"></tbody></table></div>
+</div>
+</section>
+
+<div id="answerDetailModal" class="modal hidden"><div class="modal-backdrop" data-answer-close></div><div class="modal-card answer-detail-card"><div class="modal-head"><div><span class="eyebrow red">DETALHES DO REGISTRO</span><h2 id="answerDetailTitle">Abastecimento</h2><p id="answerDetailSubtitle"></p></div><button class="close-btn" data-answer-close>×</button></div><div id="answerDetailBody" class="answer-detail-body"></div><div class="modal-actions"><button class="secondary-btn" data-answer-close>Fechar</button></div></div></div>
 
 <section id="settingsView" class="view hidden">
 <div class="page-head"><div><span class="eyebrow red">SISTEMA</span><h2>Configurações</h2><p>Preferências do portal, regras de validação e manutenção da base local.</p></div></div>
