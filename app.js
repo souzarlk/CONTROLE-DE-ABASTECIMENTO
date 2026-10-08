@@ -355,7 +355,7 @@ function renderFiles(id,rows,key,moreId){
    const thumb=direct?'<img src="'+esc(src.view)+'" alt="Evidência" loading="lazy" onerror="this.classList.add(\'image-failed\')">':local?'📷':'▣';
    return '<div class="file-item '+(image?'is-link':'')+'"><button type="button" class="file-thumb-button '+(direct?'': 'local-photo-thumb')+'" data-photo-value="'+esc(v)+'" data-photo-title="'+esc(key)+' '+fmt(item.index+1)+'">'+thumb+'</button><div><strong>Evidência '+fmt(item.index+1)+'</strong><small>'+esc(local?(v.startsWith('localphoto:')?'Foto armazenada neste navegador':v):v)+'</small></div>'+(image?'<button type="button" class="file-open" data-photo-value="'+esc(v)+'" data-photo-title="'+esc(key)+' '+fmt(item.index+1)+'">Visualizar ↗</button>':'<span class="file-open disabled">Arquivo registrado</span>')+'</div>'
  }).join('')||'<div class="no-results">Nenhuma evidência registrada nesta pergunta.</div>';
- items.slice(0,12).forEach((item,i)=>{if(photoSource(item.value).kind==='local'){const b=el.querySelectorAll('[data-photo-value]')[i];if(b)hydrateLocalPhotoButton(b,item.value,key+' '+fmt(item.index+1))}});
+ el.querySelectorAll('.file-thumb-button[data-photo-value]').forEach(b=>{const value=b.dataset.photoValue;if(photoSource(value).kind==='local')hydrateLocalPhotoButton(b,value,b.dataset.photoTitle||key)});
  const more=$(moreId);if(more){more.textContent=items.length?'Visualizar tudo • '+fmt(items.length)+' evidências ↗':'Visualizar tudo • 0 evidências';more.style.display='inline-flex';more.disabled=!items.length;more.onclick=()=>{if(items.length)showPhotoList(key,items)}}
 }
 function showPhotoList(key,items){
