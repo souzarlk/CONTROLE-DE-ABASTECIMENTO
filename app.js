@@ -70,7 +70,6 @@ function renderAnswerFilterOptions(){
 }
 function groupCounts(rows,key){const m={};rows.forEach(r=>{const v=String(r[key]??'').trim()||'Não informado';m[v]=(m[v]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
 const chartColors=['#e30613','#ef5660','#a9000c','#f58b91','#6f1118','#d62d39','#ffb3b8','#8c2630'];
-const chartColors=['#e30613','#ef5660','#a9000c','#f58b91','#6f1118','#d62d39','#ffb3b8','#8c2630'];
 const chartRegistry={};
 let chartObserver=null;
 function chartPalette(){return ['#e30613','#1769aa','#f39c12','#18a56b','#7c4dff','#00a6a6','#ef4f7a','#6f42c1','#5f8f2f','#d97706']}
