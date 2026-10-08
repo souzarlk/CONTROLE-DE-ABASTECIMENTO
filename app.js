@@ -5,7 +5,23 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function num(v){v=String(v??'').trim();if(!v)return 0;if(v.includes(','))return parseFloat(v.replace(/\./g,'').replace(',','.'))||0;return parseFloat(v)||0}
 function csv(t){let sep=(t.split(/\r?\n/)[0].split(';').length>t.split(/\r?\n/)[0].split(',').length)?';':',';let a=[],r=[],c='',q=false;for(let i=0;i<t.length;i++){let x=t[i],n=t[i+1];if(x==='"'){if(q&&n==='"'){c+='"';i++}else q=!q}else if(x===sep&&!q){r.push(c);c=''}else if((x==='\n'||x==='\r')&&!q){if(x==='\r'&&n==='\n')i++;r.push(c);if(r.some(Boolean))a.push(r);r=[];c=''}else c+=x}if(c||r.length){r.push(c);a.push(r)}return a}
-function normalize(a){let h=a[0];return a.slice(1).map((r,i)=>{let o={id:i+1};h.forEach((k,j)=>o[k]=(r[j]??'').trim());o.liters=num(o['Qtd - Litros']);o.odo=num(o['Hodômetro']);o.date=o.DATA||'';o.time=o.HORA||'';o.employee=(o['FUNCIONÁRIO']||'').trim().toUpperCase();o.plate=(o.Placa||'').trim().toUpperCase().replace(/[ -]/g,'');o.photoPlate=o['Foto- Placa']||o['Foto - Placa']||o['Foto-Placa']||'';o.photoOdo=o['foto - Hodômetro']||o['Foto - Hodômetro']||o['Foto-Hodômetro']||'';o.photoPump=o['Foto - bomba']||o['Foto-bomba']||o['Foto - Bomba']||'';return o}).filter(x=>x.plate)}
+function normalize(a){
+ const h=a[0]||[];
+ const nk=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+ const find=(patterns)=>{const key=h.find(k=>patterns.some(p=>p.test(nk(k))));return key||''};
+ const photoPlateKey=find([/foto.*placa/,/placa.*foto/]),photoOdoKey=find([/foto.*hodometro/,/hodometro.*foto/]),photoPumpKey=find([/foto.*bomba/,/bomba.*foto/]);
+ return a.slice(1).map((r,i)=>{
+   let o={id:i+1};h.forEach((k,j)=>o[k]=(r[j]??'').trim());
+   o.liters=num(o['Qtd - Litros']);o.odo=num(o['Hodômetro']);o.date=o.DATA||'';o.time=o.HORA||'';
+   o.employee=(o['FUNCIONÁRIO']||'').trim().toUpperCase();o.plate=(o.Placa||'').trim().toUpperCase().replace(/[ -]/g,'');
+   o.photoPlate=photoPlateKey?String(o[photoPlateKey]||'').trim():'';
+   o.photoOdo=photoOdoKey?String(o[photoOdoKey]||'').trim():'';
+   o.photoPump=photoPumpKey?String(o[photoPumpKey]||'').trim():'';
+   o.photoColumns={plate:photoPlateKey,odo:photoOdoKey,pump:photoPumpKey};
+   o.photoCount=[o.photoPlate,o.photoOdo,o.photoPump].filter(Boolean).length;
+   return o
+ }).filter(x=>x.plate)
+}
 function fmt(n,d=0){return new Intl.NumberFormat('pt-BR',{maximumFractionDigits:d}).format(n)}
 function br(d){if(!d)return'—';let p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
 function dt(o){return br(o.date)+' '+(o.time||'')}
@@ -75,9 +91,22 @@ function renderTimeDistribution(rows){
 function renderList(id,groups,limit=12){
  const el=$(id);if(!el)return;el.innerHTML=groups.slice(0,limit).map(g=>'<div class="answer-list-item">'+esc(g[0])+' <strong>'+fmt(g[1])+'</strong></div>').join('')||'<div class="no-results">Nenhuma resposta.</div>';
 }
+function photoHref(v){
+ const s=String(v||'').trim();if(!s)return '';
+ if(/^https?:\\/\\//i.test(s))return s;
+ const m=s.match(/(?:drive\\.google\\.com\\/(?:open\\?id=|file\\/d\\/))([A-Za-z0-9_-]+)/i);
+ return m?'https://drive.google.com/file/d/'+m[1]+'/view':'';
+}
 function renderFiles(id,rows,key,moreId){
- const vals=rows.map(r=>r[key]).filter(Boolean),el=$(id);if(!el)return;el.innerHTML=vals.slice(0,10).map(v=>'<div class="file-item"><span class="file-icon">▣</span><a href="'+esc(/^https?:\/\//i.test(v)?v:'#')+'" '+(/^https?:\/\//i.test(v)?'target="_blank" rel="noopener"':'onclick="return false"')+'>'+esc(v)+'</a></div>').join('')||'<div class="no-results">Nenhum arquivo disponível.</div>';
- const more=$(moreId);if(more)more.textContent=vals.length>10?'Mais '+fmt(vals.length-10)+' arquivos':'';
+ const vals=[...new Set(rows.map(r=>String(r[key]||'').trim()).filter(Boolean))],el=$(id);if(!el)return;
+ el.innerHTML=vals.slice(0,12).map((v,i)=>{const href=photoHref(v),img=/\\.(?:jpg|jpeg|png|webp|gif)(?:\\?|$)/i.test(v);return '<div class="file-item '+(href?'is-link':'')+'">'+(img&&href?'<img src="'+esc(v)+'" alt="Evidência" loading="lazy">':'<span class="file-icon">▣</span>')+'<div><strong>Evidência '+fmt(i+1)+'</strong><small>'+esc(v)+'</small></div>'+(href?'<a class="file-open" href="'+esc(href)+'" target="_blank" rel="noopener">Abrir ↗</a>':'<span class="file-open disabled">Arquivo</span>')+'</div>'}).join('')||'<div class="no-results">Nenhuma evidência registrada nesta pergunta.</div>';
+ const more=$(moreId);if(more){more.textContent=vals.length>12?'Ver mais '+fmt(vals.length-12)+' arquivos':' ';more.onclick=()=>showPhotoList(key,vals)}
+}
+function showPhotoList(key,vals){
+ const title=key==='photoPlate'?'Foto - Placa':key==='photoOdo'?'Foto - Hodômetro':'Foto - bomba';
+ $('answerDetailTitle').textContent=title;$('answerDetailSubtitle').textContent=fmt(vals.length)+' evidências encontradas';
+ $('answerDetailBody').innerHTML='<div class="photo-gallery">'+vals.map((v,i)=>{const href=photoHref(v),img=/\\.(?:jpg|jpeg|png|webp|gif)(?:\\?|$)/i.test(v);return '<div class="gallery-item">'+(img&&href?'<img src="'+esc(v)+'" alt="'+esc(title)+' '+fmt(i+1)+'">':'<div class="gallery-file">▣</div>')+'<div><strong>'+esc(title)+' '+fmt(i+1)+'</strong><small>'+esc(v)+'</small></div>'+(href?'<a href="'+esc(href)+'" target="_blank" rel="noopener">Abrir evidência ↗</a>':'<span>Arquivo registrado</span>')+'</div>'}).join('')+'</div>';
+ $('answerDetailModal').classList.remove('hidden');
 }
 function renderAnswerSummary(){
  const rows=filteredAnswerRows(),total=rows.length;
@@ -93,9 +122,14 @@ function renderAnswerSummary(){
  ['plate','odo','liters'].forEach((x,i)=>$(x+'QuestionMeta').textContent=fmt(total)+' respostas');
  $('photoPlateQuestionMeta').textContent=fmt(rows.filter(r=>r.photoPlate).length)+' respostas';$('photoOdoQuestionMeta').textContent=fmt(rows.filter(r=>r.photoOdo).length)+' respostas';$('photoPumpQuestionMeta').textContent=fmt(rows.filter(r=>r.photoPump).length)+' respostas';
 }
+let individualPage=1;
+const individualPageSize=50;
 function renderIndividual(){
- const rows=filteredAnswerRows();$('individualCount').textContent=fmt(rows.length)+' registros';
- $('answersBody').innerHTML=rows.slice(0,500).map((r,i)=>{const photos=[r.photoPlate,r.photoOdo,r.photoPump].filter(Boolean).length,alert=!/Sim - ok/i.test(r['Possuí Antifurto?']||'')||r.liters>800;return '<tr class="answer-row" data-answer-id="'+esc(String(r.id))+'"><td>'+fmt(i+1)+'</td><td><strong>'+br(r.date)+'</strong></td><td>'+esc(r.time||'—')+'</td><td><strong>'+esc(r.employee||'—')+'</strong></td><td><span class="plate-chip">'+esc(r.plate||'—')+'</span></td><td>'+fmt(r.odo)+' km</td><td><strong>'+fmt(r.liters,2)+' L</strong></td><td><span class="status-dot '+(/Sim - ok/i.test(r['Possuí Antifurto?']||'')?'ok':'warn')+'">'+esc(r['Possuí Antifurto?']||'—')+'</span></td><td>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</td><td>'+(photos?'<span class="evidence-badge">📷 '+photos+'</span>':'—')+(alert?'<span class="row-alert">!</span>':'')+'</td></tr>'}).join('')||'<tr><td colspan="10" class="no-results"><strong>Nenhuma resposta encontrada</strong></td></tr>';
+ const rows=filteredAnswerRows(),pages=Math.max(1,Math.ceil(rows.length/individualPageSize));individualPage=Math.min(individualPage,pages);
+ const start=(individualPage-1)*individualPageSize,viewRows=rows.slice(start,start+individualPageSize);
+ $('individualCount').textContent=fmt(rows.length)+' registros • página '+fmt(individualPage)+'/'+fmt(pages);
+ $('answersBody').innerHTML=viewRows.map((r,i)=>{const photos=r.photoCount||[r.photoPlate,r.photoOdo,r.photoPump].filter(Boolean).length,alert=!/Sim - ok/i.test(r['Possuí Antifurto?']||'')||r.liters>800;return '<tr class="answer-row" data-answer-id="'+esc(String(r.id))+'"><td>'+fmt(start+i+1)+'</td><td><strong>'+br(r.date)+'</strong></td><td>'+esc(r.time||'—')+'</td><td><strong>'+esc(r.employee||'—')+'</strong></td><td><span class="plate-chip">'+esc(r.plate||'—')+'</span></td><td>'+fmt(r.odo)+' km</td><td><strong>'+fmt(r.liters,2)+' L</strong></td><td><span class="status-dot '+(/Sim - ok/i.test(r['Possuí Antifurto?']||'')?'ok':'warn')+'">'+esc(r['Possuí Antifurto?']||'—')+'</span></td><td>'+esc(r['Quantos tanque o veículo possui?']||'—')+'</td><td>'+(photos?'<span class="evidence-badge">📷 '+photos+'</span>':'—')+(alert?'<span class="row-alert">!</span>':'')+'</td></tr>'}).join('')||'<tr><td colspan="10" class="no-results"><strong>Nenhuma resposta encontrada</strong></td></tr>';
+ $('individualPagination').innerHTML='<button type="button" data-ind-page="'+(individualPage-1)+'" '+(individualPage<=1?'disabled':'')+'>‹</button><span>'+fmt(start+1)+'–'+fmt(Math.min(start+individualPageSize,rows.length))+' de '+fmt(rows.length)+'</span><button type="button" data-ind-page="'+(individualPage+1)+'" '+(individualPage>=pages?'disabled':'')+'>›</button>';
 }
 function renderQuestionTab(){
  const qs=[['DATA','date'],['HORA','time'],['FUNCIONÁRIO','FUNCIONÁRIO'],['Placa','Placa'],['Foto - Placa','photoPlate'],['Hodômetro','Hodômetro'],['Foto - Hodômetro','photoOdo'],['Qtd - Litros','Qtd - Litros'],['Foto - bomba','photoPump'],['Possui Antifurto?','Possuí Antifurto?'],['Quantos tanque o veículo possui?','Quantos tanque o veículo possui?']];
