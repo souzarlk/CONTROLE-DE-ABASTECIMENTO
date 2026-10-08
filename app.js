@@ -70,14 +70,73 @@ function renderAnswerFilterOptions(){
 }
 function groupCounts(rows,key){const m={};rows.forEach(r=>{const v=String(r[key]??'').trim()||'Não informado';m[v]=(m[v]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
 const chartColors=['#e30613','#ef5660','#a9000c','#f58b91','#6f1118','#d62d39','#ffb3b8','#8c2630'];
+const chartColors=['#e30613','#ef5660','#a9000c','#f58b91','#6f1118','#d62d39','#ffb3b8','#8c2630'];
+const chartRegistry={};
+let chartObserver=null;
+function chartPalette(){return ['#e30613','#1769aa','#f39c12','#18a56b','#7c4dff','#00a6a6','#ef4f7a','#6f42c1','#5f8f2f','#d97706']}
+function ensureChartObserver(){
+ if(chartObserver||!window.IntersectionObserver)return;
+ chartObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+   if(!entry.isIntersecting)return;
+   const el=entry.target;
+   el.classList.remove('chart-live');void el.offsetWidth;el.classList.add('chart-live');
+ }),{threshold:.42,rootMargin:'-6% 0px -8% 0px'});
+ document.querySelectorAll('.donut-chart').forEach(el=>chartObserver.observe(el));
+}
+function focusChartSegment(id,index,source){
+ const el=$(id),leg=$(chartRegistry[id]?.legendId);if(!el||!chartRegistry[id])return;
+ const segs=[...el.querySelectorAll('.donut-segment-main')],depths=[...el.querySelectorAll('.donut-segment-depth')],items=leg?[...leg.querySelectorAll('.legend-item')]:[];
+ const current=el.dataset.focusIndex==String(index)?-1:index;
+ el.dataset.focusIndex=current;
+ segs.forEach((seg,i)=>{seg.classList.toggle('is-focus',current===i);seg.classList.toggle('is-dimmed',current>=0&&current!==i);seg.setAttribute('aria-pressed',current===i?'true':'false')});
+ depths.forEach((seg,i)=>{seg.classList.toggle('is-focus',current===i);seg.classList.toggle('is-dimmed',current>=0&&current!==i)});
+ items.forEach((item,i)=>{item.classList.toggle('is-focus',current===i);item.classList.toggle('is-dimmed',current>=0&&current!==i);item.setAttribute('aria-pressed',current===i?'true':'false')});
+ if(source!=='legend'&&current>=0&&items[current])items[current].scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function chartTooltip(id,index,x,y){
+ const el=$(id),meta=chartRegistry[id],tip=el?.querySelector('.chart-tooltip');if(!el||!meta||!tip)return;
+ const g=meta.groups[index];if(!g)return;
+ const pct=(g[1]/meta.total*100).toFixed(1);
+ tip.innerHTML='<strong>'+esc(g[0])+'</strong><span>'+fmt(g[1])+' respostas • '+pct+'%</span>';
+ const rect=el.getBoundingClientRect(),left=Math.max(8,Math.min(x-rect.left+12,rect.width-190)),top=Math.max(8,y-rect.top-58);
+ tip.style.left=left+'px';tip.style.top=top+'px';tip.classList.add('show');
+}
+function hideChartTooltip(id){$(id)?.querySelector('.chart-tooltip')?.classList.remove('show')}
+function bindDonutInteractions(id,legendId){
+ const el=$(id),leg=$(legendId);if(!el||!leg)return;
+ el.querySelectorAll('.donut-segment-main').forEach((seg,i)=>{
+   seg.addEventListener('mouseenter',e=>{focusChartSegment(id,i);chartTooltip(id,i,e.clientX,e.clientY)});
+   seg.addEventListener('mousemove',e=>chartTooltip(id,i,e.clientX,e.clientY));
+   seg.addEventListener('mouseleave',()=>hideChartTooltip(id));
+   seg.addEventListener('click',()=>focusChartSegment(id,i));
+ });
+ leg.querySelectorAll('.legend-item').forEach((item,i)=>{
+   item.addEventListener('mouseenter',()=>{focusChartSegment(id,i,'legend')});
+   item.addEventListener('mouseleave',()=>{if($(id)?.dataset.focusIndex===''||$(id)?.dataset.focusIndex===undefined)focusChartSegment(id,-1,'legend')});
+   item.addEventListener('click',()=>focusChartSegment(id,i,'legend'));
+ });
+}
 function renderDonut(id,legendId,groups,total){
  const el=$(id),leg=$(legendId);if(!el||!leg)return;
+ chartRegistry[id]={legendId,groups:groups.slice(0,10),total};
  if(!groups.length||!total){el.innerHTML='<span class="donut-center">0<small>respostas</small></span>';el.style.background='none';leg.innerHTML='<div class="chart-empty">Sem dados para exibir</div>';return}
- const palette=['#4285F4','#EA4335','#FBBC04','#34A853','#A142F4','#00ACC1','#FF7043','#8E24AA','#7CB342','#EC407A'];
- const r=54,c=2*Math.PI*r;let offset=0;
- const parts=groups.slice(0,10).map((g,i)=>{const len=(g[1]/total)*c,dash=Math.max(0,len-2),start=offset;offset+=len;return '<circle class="donut-segment" cx="70" cy="70" r="'+r+'" fill="none" stroke="'+palette[i%palette.length]+'" stroke-width="20" stroke-linecap="round" stroke-dasharray="0 '+c+'" stroke-dashoffset="'+(-start)+'" style="--dash:'+dash+'px;--circ:'+c+'px;--delay:'+(i*80)+'ms"></circle>'}).join('');
- el.innerHTML='<svg class="donut-svg" viewBox="0 0 140 140" aria-label="Gráfico de distribuição">'+parts+'</svg><span class="donut-center">'+fmt(total)+'<small>respostas</small></span>';el.style.background='none';
- leg.innerHTML=groups.slice(0,10).map((g,i)=>'<div class="legend-item"><i class="legend-dot" style="background:'+palette[i%palette.length]+'"></i><span>'+esc(g[0])+'</span><strong>'+((g[1]/total)*100).toFixed(1)+'%</strong><em>'+fmt(g[1])+'</em></div>').join('');
+ const palette=chartPalette(),r=49,c=2*Math.PI*r;let offset=0;
+ const parts=groups.slice(0,10).map((g,i)=>{
+   const len=(g[1]/total)*c,dash=Math.max(0,len-3),start=offset;offset+=len;
+   const color=palette[i%palette.length],pct=(g[1]/total*100).toFixed(1);
+   return '<circle class="donut-segment-depth" data-index="'+i+'" cx="80" cy="84" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 '+c+'" stroke-dashoffset="'+(-start)+'" style="--dash:'+dash+'px;--circ:'+c+'px;--delay:'+(i*55)+'ms"></circle>'+
+   '<circle class="donut-segment-main" data-index="'+i+'" cx="80" cy="80" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 '+c+'" stroke-dashoffset="'+(-start)+'" style="--dash:'+dash+'px;--circ:'+c+'px;--delay:'+(i*55)+'ms" tabindex="0" role="button" aria-label="'+esc(g[0])+' — '+pct+'%" aria-pressed="false"></circle>';
+ }).join('');
+ el.dataset.focusIndex='';
+ el.innerHTML='<svg class="donut-svg" viewBox="0 0 160 160" aria-label="Gráfico de distribuição">'+
+ '<defs><filter id="chartShadow-'+id+'" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-opacity=".18"/></filter></defs>'+
+ '<circle class="donut-base" cx="80" cy="80" r="'+r+'" fill="none" stroke="#edf0f3" stroke-width="22"></circle>'+
+ '<circle class="donut-orbit" cx="80" cy="80" r="61" fill="none" stroke="#b9c4ce" stroke-width="1.5" stroke-dasharray="2 9" opacity=".55"></circle>'+
+ parts+'<circle class="donut-inner-glow" cx="80" cy="80" r="37" fill="none" stroke="rgba(255,255,255,.72)" stroke-width="1"></circle></svg>'+
+ '<span class="donut-center"><b>'+fmt(total)+'</b><small>respostas</small></span><div class="chart-tooltip" role="status"></div>';
+ el.style.background='none';
+ leg.innerHTML=groups.slice(0,10).map((g,i)=>'<button type="button" class="legend-item" data-chart-index="'+i+'" aria-pressed="false"><i class="legend-dot" style="background:'+palette[i%palette.length]+'"></i><span>'+esc(g[0])+'</span><strong>'+((g[1]/total)*100).toFixed(1)+'%</strong><em>'+fmt(g[1])+'</em></button>').join('');
+ bindDonutInteractions(id,legendId);ensureChartObserver();
 }
 function renderDateHeatmap(rows){
  const map={};rows.forEach(r=>{if(!r.date)return;const [y,m,d]=r.date.split('-');if(!map[y+'-'+m])map[y+'-'+m]={y,m,days:{}};map[y+'-'+m].days[d]=(map[y+'-'+m].days[d]||0)+1});
@@ -102,7 +161,7 @@ function photoHref(v){
 function renderFiles(id,rows,key,moreId){
  const items=rows.map((r,i)=>({value:String(r[key]||'').trim(),index:i})).filter(x=>x.value);const el=$(id);if(!el)return;
  el.innerHTML=items.slice(0,12).map(item=>{const v=item.value,href=photoHref(v),img=/\.(?:jpg|jpeg|png|webp|gif)(?:\?.*)?$/i.test(v);return '<div class="file-item '+(href?'is-link':'')+'">'+(img&&href?'<img src="'+esc(v)+'" alt="Evidência" loading="lazy" onerror="this.classList.add(\'image-failed\')">':'<span class="file-icon">▣</span>')+'<div><strong>Evidência '+fmt(item.index+1)+'</strong><small>'+esc(v)+'</small></div>'+(href?'<a class="file-open" href="'+esc(href)+'" target="_blank" rel="noopener">Abrir ↗</a>':'<span class="file-open disabled">Arquivo registrado</span>')+'</div>'}).join('')||'<div class="no-results">Nenhuma evidência registrada nesta pergunta.</div>';
- const more=$(moreId);if(more){more.textContent=items.length>12?'Ver todas as '+fmt(items.length)+' evidências ↗':'';more.style.display=items.length>12?'inline-flex':'none';more.onclick=()=>showPhotoList(key,items)}
+ const more=$(moreId);if(more){more.textContent=items.length?'Visualizar tudo • '+fmt(items.length)+' evidências ↗':'Visualizar tudo • 0 evidências';more.style.display='inline-flex';more.disabled=!items.length;more.setAttribute('aria-disabled',String(!items.length));more.onclick=()=>{if(items.length)showPhotoList(key,items)}}
 }
 function showPhotoList(key,items){
  const title=key==='photoPlate'?'Foto - Placa':key==='photoOdo'?'Foto - Hodômetro':'Foto - bomba';photoGalleryState={title,items,page:1,key};
